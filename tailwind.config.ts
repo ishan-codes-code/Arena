@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        arena: {
+        palette: {
           red: "#D7263D",
           ink: "#121212",
           paper: "#F7F7F4",
