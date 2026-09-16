@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/app/modules/theme/ui/components/theme-provider";
+import { ArenaSidebar } from "@/app/modules/arena/ui/components/arena-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const displayFont = Archivo({
@@ -36,7 +39,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          {children}
+          <SidebarProvider>
+            <TooltipProvider>
+              <ArenaSidebar />
+              <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+            </TooltipProvider>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
