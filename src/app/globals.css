@@ -73,7 +73,7 @@
   --chart-3: #D7263D;
   --chart-4: #6B6B68;
   --chart-5: #D3D2CC;
-  --radius: 2px;
+  --radius: 22px;
   --sidebar: #F7F7F4;
   --sidebar-foreground: #121212;
   --sidebar-primary: #D7263D;
@@ -134,5 +134,15 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .arena-cut-panel {
+    clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%, 0 0);
+  }
+
+  .arena-cut-panel-tight {
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 0);
   }
 }

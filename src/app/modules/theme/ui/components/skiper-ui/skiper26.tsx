@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import React, { useCallback, useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { ThemeIcon } from "@/components/ui/skiper-ui/theme-icon";
+import { ThemeIcon } from "@/app/modules/theme/ui/components/skiper-ui/theme-icon";
 
 const Skiper26 = () => {
   const [variant, setVariant] = useState<AnimationVariant>("rectangle");

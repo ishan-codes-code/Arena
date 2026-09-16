@@ -24,6 +24,7 @@ export function ThemeIcon({ isDark }: { isDark: boolean }) {
       </clipPath>
       <g clipPath={`url(#${clipPathId})`}>
         <motion.circle
+          initial={{ r: 8 }}
           animate={{ r: isDark ? 10 : 8 }}
           transition={{ ease: "easeInOut", duration: 0.35 }}
           cx="16"
