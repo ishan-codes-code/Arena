@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 
 export function OAuthButtons() {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <Button type="button" variant="outline" size="lg" className="h-10" onClick={() => console.log("Google OAuth")}>
+    <div className="grid gap-2 sm:grid-cols-2">
+      <Button type="button" variant="outline" size="lg" className="h-12 rounded-none font-mono text-[10px] uppercase tracking-[0.1em]" onClick={() => console.log("Google OAuth")}>
         <Globe />
         Continue with Google
       </Button>
-      <Button type="button" variant="outline" size="lg" className="h-10" onClick={() => console.log("Discord OAuth")}>
+      <Button type="button" variant="outline" size="lg" className="h-12 rounded-none font-mono text-[10px] uppercase tracking-[0.1em]" onClick={() => console.log("Discord OAuth")}>
         <MessageCircle />
         Continue with Discord
       </Button>
