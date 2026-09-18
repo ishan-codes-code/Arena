@@ -1,0 +1,26 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
+
+import { ArenaSidebar } from "@/app/modules/arena/ui/components/arena-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+
+  if (isAuthRoute) {
+    return children;
+  }
+
+  return (
+    <SidebarProvider>
+      <TooltipProvider>
+        <ArenaSidebar />
+        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      </TooltipProvider>
+    </SidebarProvider>
+  );
+}

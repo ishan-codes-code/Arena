@@ -1,6 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
-import { ThemeToggleButton } from "@/app/modules/theme/ui/components/skiper-ui/skiper26";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -9,10 +9,11 @@ export function HomeView() {
     <main className="min-h-screen bg-background text-foreground">
       <header className="flex items-center justify-between border-b border-border px-6 py-4 lg:px-10">
         <SidebarTrigger />
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground sm:gap-4">
           <a className="hidden transition-colors hover:text-foreground sm:block" href="#how-it-works">How it works</a>
-          <a className="transition-colors hover:text-foreground" href="#tournaments">Tournaments</a>
-          <ThemeToggleButton variant="circle" start="top-right" className="!size-8 !rounded-md !border-border !bg-background !p-1 !shadow-none hover:!bg-muted" />
+          <a className="hidden transition-colors hover:text-foreground sm:block" href="#tournaments">Tournaments</a>
+          <Link href="/login" className="rounded-md px-2 py-2 font-medium transition-colors hover:bg-muted hover:text-foreground">Log in</Link>
+          <Link href="/signup" className="rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/80">Sign up</Link>
         </div>
       </header>
 
