@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-import { ArenaSidebar } from "@/app/modules/arena/ui/components/arena-sidebar";
+import { ArenaSidebar } from "@/app/modules/competition/ui/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 

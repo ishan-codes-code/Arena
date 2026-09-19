@@ -33,30 +33,30 @@ export function LoginView() {
   }
 
   return (
-    <main className="flex h-dvh min-h-0 items-start overflow-hidden bg-background sm:h-auto sm:min-h-screen sm:items-center sm:px-8 sm:py-4 lg:px-12">
-      <Card className="grid h-dvh min-h-0 w-full max-w-6xl overflow-hidden rounded-none border-y border-x-0 border-border bg-card shadow-none sm:h-auto sm:min-h-0 sm:border lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-        <CardHeader className="relative min-h-0 justify-between gap-4 border-b border-border px-5 py-4 sm:min-h-92 sm:gap-12 sm:px-10 sm:py-10 lg:min-h-[620px] lg:border-r lg:border-b-0 lg:px-12 lg:py-12">
-          <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span className="flex size-7 items-center justify-center bg-primary font-heading text-sm font-black tracking-normal text-primary-foreground">A</span>
+    <main className="flex min-h-dvh items-start overflow-y-auto bg-background px-3 py-3 sm:h-auto sm:min-h-screen sm:items-center sm:px-8 sm:py-4 lg:px-12">
+      <Card className="grid h-auto min-h-0 w-full max-w-6xl overflow-hidden rounded-2xl border-border/70 bg-card shadow-[0_24px_80px_color-mix(in_srgb,var(--foreground)_10%,transparent)] sm:h-auto sm:min-h-0 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:rounded-3xl">
+        <CardHeader className="relative min-h-0 justify-between gap-5 border-b border-border-strong/70 bg-slab px-4 py-4 text-slab-foreground sm:min-h-92 sm:gap-12 sm:px-10 sm:py-10 lg:min-h-[620px] lg:border-r lg:border-b-0 lg:px-12 lg:py-12">
+          <div className="text-eyebrow flex items-center gap-3">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-primary font-heading text-sm font-black tracking-normal text-primary-foreground">A</span>
             Arena / Authentication
           </div>
           <div className="relative z-10 grid gap-2 sm:gap-5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">01 — Member access</p>
-            <CardTitle className="max-w-md font-heading text-3xl leading-[0.88] font-black tracking-[-0.07em] sm:text-6xl lg:text-7xl">Enter the arena.</CardTitle>
-            <CardDescription className="hidden max-w-[17rem] text-sm leading-relaxed text-muted-foreground sm:block sm:text-base">Pick up exactly where you left the competition.</CardDescription>
+            <p className="text-eyebrow">01 — Member access</p>
+            <CardTitle className="text-display max-w-md text-2xl sm:text-6xl lg:text-7xl">Enter the arena.</CardTitle>
+            <CardDescription className="hidden max-w-[17rem] text-base leading-relaxed text-slab-foreground sm:block">Pick up exactly where you left the competition.</CardDescription>
           </div>
           <div className="grid gap-3 sm:gap-6">
             <div className="h-px w-full bg-border" />
             <AuthTabs active="login" />
           </div>
-          <span aria-hidden className="pointer-events-none absolute right-5 bottom-20 hidden font-heading text-8xl leading-none font-black tracking-[-0.12em] text-muted opacity-60 sm:block lg:right-8 lg:bottom-36">01</span>
+          <span aria-hidden className="pointer-events-none absolute right-5 bottom-20 hidden font-heading text-8xl leading-none font-black tracking-[-0.12em] opacity-20 sm:block lg:right-8 lg:bottom-36">01</span>
         </CardHeader>
-        <CardContent className="flex min-h-0 flex-col justify-center px-5 py-5 sm:px-12 sm:py-12 lg:px-16">
-          <div className="mb-4 flex items-end justify-between border-b border-border pb-3 sm:mb-10 sm:pb-4">
+        <CardContent className="flex min-h-0 flex-col justify-center px-4 py-4 sm:px-12 sm:py-12 lg:px-16">
+          <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
             <p className="font-mono text-[10px] text-primary">Required *</p>
           </div>
-          <form className="grid gap-4 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+          <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
             <EmailField id="login-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
             <PasswordField
               id="login-password"
@@ -69,14 +69,14 @@ export function LoginView() {
             <div className="flex justify-end">
               <Link href="/forgot-password" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
             </div>
-            <Button type="submit" size="lg" className="h-12 rounded-none font-mono text-[11px] uppercase tracking-[0.14em]" disabled={form.formState.isSubmitting}>
+            <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
               {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
           </form>
-          <div className="my-4 flex items-center gap-2 sm:my-8 sm:gap-3">
+          <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
             <Separator className="flex-1" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">or continue with</span>
+            <span className="text-eyebrow text-muted-foreground">or continue with</span>
             <Separator className="flex-1" />
           </div>
           <OAuthButtons />
