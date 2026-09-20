@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
@@ -9,7 +10,9 @@ import { z } from "zod";
 
 import { EmailField, PasswordField } from "@/modules/auth/ui/components/auth-fields";
 import { AuthTabs } from "@/modules/auth/ui/components/auth-tabs";
+import { EmailVerification } from "@/modules/auth/ui/components/email-verification";
 import { OAuthButtons } from "@/modules/auth/ui/components/oauth-buttons";
+import { resendSignupCode, signInWithEmail, signOut } from "@/modules/auth/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -23,13 +26,41 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginView() {
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const router = useRouter();
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
 
   async function onSubmit(values: LoginValues) {
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    if (values.email !== "demo@example.com" || values.password !== "password123") {
-      form.setError("root.server", { message: "Those credentials do not match an account." });
+    form.clearErrors("root.server");
+
+    const { data, error } = await signInWithEmail(values.email, values.password);
+
+    if (error) {
+      if (error.code === "email_not_confirmed") {
+        const { error: resendError } = await resendSignupCode(values.email);
+
+        if (!resendError) {
+          setVerificationEmail(values.email);
+          return;
+        }
+      }
+
+      form.setError("root.server", { message: error.message });
+      return;
     }
+
+    if (!data.session || !data.user) {
+      form.setError("root.server", { message: "We could not start your session. Please try again." });
+      return;
+    }
+
+    if (!data.user.email_confirmed_at) {
+      await signOut();
+      form.setError("root.server", { message: "Verify your email before signing in." });
+      return;
+    }
+
+    router.replace("/");
   }
 
   return (
@@ -52,34 +83,40 @@ export function LoginView() {
           <span aria-hidden className="pointer-events-none absolute right-5 bottom-20 hidden font-heading text-8xl leading-none font-black tracking-[-0.12em] opacity-20 sm:block lg:right-8 lg:bottom-36">01</span>
         </CardHeader>
         <CardContent className="flex min-h-0 flex-col justify-center px-4 py-4 sm:px-12 sm:py-12 lg:px-16">
-          <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
-            <p className="font-mono text-[10px] text-primary">Required *</p>
-          </div>
-          <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-            <EmailField id="login-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
-            <PasswordField
-              id="login-password"
-              registration={form.register("password")}
-              error={form.formState.errors.password?.message}
-              visible={passwordVisible}
-              onToggle={() => setPasswordVisible((current) => !current)}
-            />
-            {form.formState.errors.root?.server ? <p className="text-sm text-destructive">{form.formState.errors.root.server.message}</p> : null}
-            <div className="flex justify-end">
-              <Link href="/forgot-password" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
-            </div>
-            <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
-              {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-          <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
-            <Separator className="flex-1" />
-            <span className="text-eyebrow text-muted-foreground">or continue with</span>
-            <Separator className="flex-1" />
-          </div>
-          <OAuthButtons />
+          {verificationEmail ? (
+            <EmailVerification email={verificationEmail} onVerified={() => router.replace("/")} />
+          ) : (
+            <>
+              <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
+                <p className="font-mono text-[10px] text-primary">Required *</p>
+              </div>
+              <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+                <EmailField id="login-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
+                <PasswordField
+                  id="login-password"
+                  registration={form.register("password")}
+                  error={form.formState.errors.password?.message}
+                  visible={passwordVisible}
+                  onToggle={() => setPasswordVisible((current) => !current)}
+                />
+                {form.formState.errors.root?.server ? <p className="text-sm text-destructive">{form.formState.errors.root.server.message}</p> : null}
+                <div className="flex justify-end">
+                  <Link href="/forgot-password" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
+                </div>
+                <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
+                  {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
+                </Button>
+              </form>
+              <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
+                <Separator className="flex-1" />
+                <span className="text-eyebrow text-muted-foreground">or continue with</span>
+                <Separator className="flex-1" />
+              </div>
+              <OAuthButtons />
+            </>
+          )}
         </CardContent>
       </Card>
     </main>

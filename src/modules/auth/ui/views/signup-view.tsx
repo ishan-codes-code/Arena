@@ -8,10 +8,13 @@ import { z } from "zod";
 
 import { EmailField, PasswordField } from "@/modules/auth/ui/components/auth-fields";
 import { AuthTabs } from "@/modules/auth/ui/components/auth-tabs";
+import { EmailVerification } from "@/modules/auth/ui/components/email-verification";
 import { OAuthButtons } from "@/modules/auth/ui/components/oauth-buttons";
+import { signUpWithEmail, signOut } from "@/modules/auth/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
 
 const signupSchema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -22,13 +25,30 @@ type SignupValues = z.infer<typeof signupSchema>;
 
 export function SignupView() {
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const router = useRouter();
   const form = useForm<SignupValues>({ resolver: zodResolver(signupSchema) });
 
   async function onSubmit(values: SignupValues) {
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    if (values.email === "taken@example.com") {
-      form.setError("root.server", { message: "That email is already registered." });
+    form.clearErrors("root.server");
+
+    const { data, error } = await signUpWithEmail(values.email, values.password);
+
+    if (error) {
+      form.setError("root.server", { message: error.message });
+      return;
     }
+
+    if (!data.user) {
+      form.setError("root.server", { message: "We could not create your account. Please try again." });
+      return;
+    }
+
+    if (data.session) {
+      await signOut();
+    }
+
+    setVerificationEmail(values.email);
   }
 
   return (
@@ -51,33 +71,39 @@ export function SignupView() {
           <span aria-hidden className="pointer-events-none absolute right-5 bottom-20 hidden font-heading text-8xl leading-none font-black tracking-[-0.12em] text-muted opacity-60 sm:block lg:right-8 lg:bottom-36">02</span>
         </CardHeader>
         <CardContent className="flex min-h-0 flex-col justify-center px-4 py-4 sm:px-12 sm:py-12 lg:px-16">
-          <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
-            <p className="font-mono text-[10px] text-primary">Required *</p>
-          </div>
-          <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-            <EmailField id="signup-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
-            <PasswordField
-              id="signup-password"
-              registration={form.register("password")}
-              error={form.formState.errors.password?.message}
-              hint="8+ characters"
-              visible={passwordVisible}
-              onToggle={() => setPasswordVisible((current) => !current)}
-            />
-            {form.formState.errors.root?.server ? <p className="text-sm text-destructive">{form.formState.errors.root.server.message}</p> : null}
-            <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
-              {form.formState.isSubmitting ? "Creating account..." : "Create account"}
-            </Button>
-            <p className="hidden font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground sm:block">Sign up takes only an email and password.</p>
-          </form>
-          <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
-            <Separator className="flex-1" />
-            <span className="text-eyebrow text-muted-foreground">or continue with</span>
-            <Separator className="flex-1" />
-          </div>
-          <OAuthButtons />
+          {verificationEmail ? (
+            <EmailVerification email={verificationEmail} onVerified={() => router.replace("/")} />
+          ) : (
+            <>
+              <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
+                <p className="font-mono text-[10px] text-primary">Required *</p>
+              </div>
+              <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+                <EmailField id="signup-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
+                <PasswordField
+                  id="signup-password"
+                  registration={form.register("password")}
+                  error={form.formState.errors.password?.message}
+                  hint="8+ characters"
+                  visible={passwordVisible}
+                  onToggle={() => setPasswordVisible((current) => !current)}
+                />
+                {form.formState.errors.root?.server ? <p className="text-sm text-destructive">{form.formState.errors.root.server.message}</p> : null}
+                <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
+                  {form.formState.isSubmitting ? "Creating account..." : "Create account"}
+                </Button>
+                <p className="hidden font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground sm:block">Sign up takes only an email and password.</p>
+              </form>
+              <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
+                <Separator className="flex-1" />
+                <span className="text-eyebrow text-muted-foreground">or continue with</span>
+                <Separator className="flex-1" />
+              </div>
+              <OAuthButtons />
+            </>
+          )}
         </CardContent>
       </Card>
     </main>

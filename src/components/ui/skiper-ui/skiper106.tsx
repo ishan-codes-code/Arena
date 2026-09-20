@@ -27,6 +27,7 @@ const inputClassName =
   "w-full bg-transparent outline-none placeholder:text-foreground/40";
 
 type InputFieldProps = ComponentPropsWithoutRef<"input"> & {
+  ref?: React.Ref<HTMLInputElement>;
   wrapperClassName?: string;
 };
 
@@ -58,6 +59,7 @@ const SmoothInput = ({
   onBlur,
   type = "text",
   placeholder,
+  ref,
   style,
   ...props
 }: SmoothInputProps) => {
@@ -266,7 +268,15 @@ const SmoothInput = ({
       >
         <input
           {...props}
-          ref={inputRef}
+          ref={(element) => {
+            inputRef.current = element;
+
+            if (typeof ref === "function") {
+              ref(element);
+            } else if (ref) {
+              ref.current = element;
+            }
+          }}
           type={activeType}
           inputMode={type === "email" ? "email" : props.inputMode}
           placeholder={displayPlaceholder}
