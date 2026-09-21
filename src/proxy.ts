@@ -29,9 +29,29 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const isAuthenticated = Boolean(data?.claims);
+  const pathname = request.nextUrl.pathname;
+
+  if (pathname === "/dashboard" && !isAuthenticated) {
+    return redirectWithCookies(request, response, "/login");
+  }
+
+  if ((pathname === "/login" || pathname === "/signup") && isAuthenticated) {
+    return redirectWithCookies(request, response, "/dashboard");
+  }
 
   return response;
+}
+
+function redirectWithCookies(request: NextRequest, response: NextResponse, path: string) {
+  const redirectResponse = NextResponse.redirect(new URL(path, request.url));
+
+  response.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+
+  return redirectResponse;
 }
 
 export const config = {
