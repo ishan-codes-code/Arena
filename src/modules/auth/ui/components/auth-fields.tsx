@@ -35,11 +35,12 @@ export function EmailField({ id, registration, error }: FieldProps) {
 
 type PasswordFieldProps = FieldProps & {
   hint?: string;
+  placeholder?: string;
   visible: boolean;
   onToggle: () => void;
 };
 
-export function PasswordField({ id, registration, error, hint, visible, onToggle }: PasswordFieldProps) {
+export function PasswordField({ id, registration, error, hint, placeholder = "Enter your password", visible, onToggle }: PasswordFieldProps) {
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-4">
@@ -51,6 +52,7 @@ export function PasswordField({ id, registration, error, hint, visible, onToggle
           id={id}
           type={visible ? "text" : "password"}
           autoComplete="current-password"
+          placeholder={placeholder}
           wrapperClassName="max-w-none rounded-xl border border-input bg-transparent p-0 transition-colors has-[:focus-visible]:border-ring has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 aria-invalid:border-destructive"
           className="h-11 px-4 pr-10 font-mono text-sm placeholder:text-muted-foreground sm:h-12"
           style={{ fontSize: "0.875rem" }}

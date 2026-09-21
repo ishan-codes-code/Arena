@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookies(request, response, "/login");
   }
 
-  if ((pathname === "/login" || pathname === "/signup") && isAuthenticated) {
+  if ((pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password") && isAuthenticated) {
     return redirectWithCookies(request, response, "/dashboard");
   }
 

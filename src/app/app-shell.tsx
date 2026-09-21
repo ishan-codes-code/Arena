@@ -9,7 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+  const isAuthRoute = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(pathname);
 
   if (isAuthRoute) {
     return children;

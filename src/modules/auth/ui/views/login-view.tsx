@@ -60,7 +60,7 @@ export function LoginView() {
       return;
     }
 
-    router.replace("/");
+    router.replace("/dashboard");
   }
 
   return (

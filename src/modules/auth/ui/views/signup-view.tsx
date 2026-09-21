@@ -72,7 +72,7 @@ export function SignupView() {
         </CardHeader>
         <CardContent className="flex min-h-0 flex-col justify-center px-4 py-4 sm:px-12 sm:py-12 lg:px-16">
           {verificationEmail ? (
-            <EmailVerification email={verificationEmail} onVerified={() => router.replace("/")} />
+            <EmailVerification email={verificationEmail} onVerified={() => router.replace("/dashboard")} />
           ) : (
             <>
               <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">

@@ -3,17 +3,22 @@
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 
-import { EMAIL_OTP_LENGTH, resendSignupCode, verifyEmailOtp } from "@/modules/auth/lib/auth-client";
+import {
+  EMAIL_OTP_LENGTH,
+  resendPasswordRecoveryCode,
+  verifyPasswordRecoveryOtp,
+} from "@/modules/auth/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
-type EmailVerificationProps = {
+type RecoveryOtpProps = {
   email: string;
   onVerified: () => void;
 };
 
 const RESEND_COOLDOWN_SECONDS = 30;
-export function EmailVerification({ email, onVerified }: EmailVerificationProps) {
+
+export function RecoveryOtp({ email, onVerified }: RecoveryOtpProps) {
   const [token, setToken] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -38,11 +43,11 @@ export function EmailVerification({ email, onVerified }: EmailVerificationProps)
     setErrorMessage(null);
     setMessage(null);
 
-    const { data, error } = await verifyEmailOtp(email, value);
+    const { data, error } = await verifyPasswordRecoveryOtp(email, value);
 
-    if (error || !data.session || !data.user?.email_confirmed_at) {
+    if (error || !data.session || !data.user) {
       setToken("");
-      setErrorMessage(error?.message ?? "We could not verify your email. Please try again.");
+      setErrorMessage(error?.message ?? "This recovery code is invalid or expired.");
       setIsVerifying(false);
       return;
     }
@@ -57,13 +62,13 @@ export function EmailVerification({ email, onVerified }: EmailVerificationProps)
     setErrorMessage(null);
     setMessage(null);
 
-    const { error } = await resendSignupCode(email);
+    const { error } = await resendPasswordRecoveryCode(email);
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage("We could not send a new recovery code. Please try again later.");
     } else {
       setCooldown(RESEND_COOLDOWN_SECONDS);
-      setMessage("A new verification code has been sent.");
+      setMessage("A new recovery code has been sent.");
     }
 
     setIsResending(false);
@@ -74,16 +79,16 @@ export function EmailVerification({ email, onVerified }: EmailVerificationProps)
       <div className="grid gap-2">
         <p className="font-heading text-xl font-bold">Check your email</p>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          We sent an 8-digit verification code to:
+          We sent an {EMAIL_OTP_LENGTH}-digit recovery code to:
         </p>
         <p className="break-all font-mono text-sm text-foreground">{email}</p>
       </div>
       <div className="grid gap-2">
-        <label htmlFor="email-verification-code" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-          Verification code
+        <label htmlFor="recovery-code" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+          Recovery code
         </label>
         <InputOTP
-          id="email-verification-code"
+          id="recovery-code"
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={EMAIL_OTP_LENGTH}
@@ -106,11 +111,11 @@ export function EmailVerification({ email, onVerified }: EmailVerificationProps)
       {message ? <p className="text-sm text-primary">{message}</p> : null}
       <Button type="button" size="lg" disabled={token.length !== EMAIL_OTP_LENGTH || isVerifying} onClick={() => void handleVerify()}>
         {isVerifying ? <LoaderCircle className="animate-spin" /> : null}
-        {isVerifying ? "Verifying..." : "Verify email"}
+        {isVerifying ? "Verifying..." : "Verify recovery code"}
       </Button>
       <div className="grid gap-2 text-center">
         <p className="text-sm text-muted-foreground">Didn&apos;t receive the code?</p>
-        <Button type="button" variant="ghost" disabled={cooldown > 0 || isResending} onClick={handleResend}>
+        <Button type="button" variant="ghost" disabled={cooldown > 0 || isResending} onClick={() => void handleResend()}>
           {isResending ? "Sending..." : cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
         </Button>
       </div>
