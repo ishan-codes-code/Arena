@@ -9,13 +9,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { EmailField, PasswordField } from "@/modules/auth/ui/components/auth-fields";
-import { AuthTabs } from "@/modules/auth/ui/components/auth-tabs";
-import { EmailVerification } from "@/modules/auth/ui/components/email-verification";
 import { OAuthButtons } from "@/modules/auth/ui/components/oauth-buttons";
 import { resendSignupCode, signInWithEmail, signOut } from "@/modules/auth/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { AuthAlert } from "@/modules/auth/ui/components/auth-alert";
+import { OtpPanel } from "@/modules/auth/ui/components/otp-panel";
+import { AuthShell } from "@/modules/auth/ui/components/auth-shell";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -24,7 +24,7 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-export function LoginView() {
+export function LoginView({ error }: { error?: string }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const router = useRouter();
@@ -64,61 +64,41 @@ export function LoginView() {
   }
 
   return (
-    <main className="flex min-h-dvh items-start overflow-y-auto bg-background px-3 py-3 sm:h-auto sm:min-h-screen sm:items-center sm:px-8 sm:py-4 lg:px-12">
-      <Card className="grid h-auto min-h-0 w-full max-w-6xl overflow-hidden rounded-2xl border-border/70 bg-card shadow-[0_24px_80px_color-mix(in_srgb,var(--foreground)_10%,transparent)] sm:h-auto sm:min-h-0 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:rounded-3xl">
-        <CardHeader className="relative min-h-0 justify-between gap-5 border-b border-border-strong/70 bg-slab px-4 py-4 text-slab-foreground sm:min-h-92 sm:gap-12 sm:px-10 sm:py-10 lg:min-h-[620px] lg:border-r lg:border-b-0 lg:px-12 lg:py-12">
-          <div className="text-eyebrow flex items-center gap-3">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-primary font-heading text-sm font-black tracking-normal text-primary-foreground">A</span>
-            Arena / Authentication
+    <AuthShell title="Sign in" description="Pick up exactly where you left the competition." stepLabel="Member access" stepNumber="01" activeTab="login" error={error} showThemeToggle={false}>
+      {verificationEmail ? (
+        <OtpPanel email={verificationEmail} type="signup" onVerified={() => router.replace("/")} />
+      ) : (
+        <div className="grid gap-5">
+          <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
+            <p className="font-mono text-[10px] text-primary">Required *</p>
           </div>
-          <div className="relative z-10 grid gap-2 sm:gap-5">
-            <p className="text-eyebrow">01 — Member access</p>
-            <CardTitle className="text-display max-w-md text-2xl sm:text-6xl lg:text-7xl">Enter the arena.</CardTitle>
-            <CardDescription className="hidden max-w-[17rem] text-base leading-relaxed text-slab-foreground sm:block">Pick up exactly where you left the competition.</CardDescription>
+          <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+            <EmailField id="login-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
+            <PasswordField
+              id="login-password"
+              registration={form.register("password")}
+              error={form.formState.errors.password?.message}
+              visible={passwordVisible}
+              onToggle={() => setPasswordVisible((current) => !current)}
+            />
+            {form.formState.errors.root?.server ? <AuthAlert status="error">{form.formState.errors.root.server.message}</AuthAlert> : null}
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
+            </div>
+            <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
+              {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
+          <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
+            <Separator className="flex-1" />
+            <span className="text-eyebrow text-muted-foreground">or continue with</span>
+            <Separator className="flex-1" />
           </div>
-          <div className="grid gap-3 sm:gap-6">
-            <div className="h-px w-full bg-border" />
-            <AuthTabs active="login" />
-          </div>
-          <span aria-hidden className="pointer-events-none absolute right-5 bottom-20 hidden font-heading text-8xl leading-none font-black tracking-[-0.12em] opacity-20 sm:block lg:right-8 lg:bottom-36">01</span>
-        </CardHeader>
-        <CardContent className="flex min-h-0 flex-col justify-center px-4 py-4 sm:px-12 sm:py-12 lg:px-16">
-          {verificationEmail ? (
-            <EmailVerification email={verificationEmail} onVerified={() => router.replace("/")} />
-          ) : (
-            <>
-              <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
-                <p className="font-mono text-[10px] text-primary">Required *</p>
-              </div>
-              <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-                <EmailField id="login-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
-                <PasswordField
-                  id="login-password"
-                  registration={form.register("password")}
-                  error={form.formState.errors.password?.message}
-                  visible={passwordVisible}
-                  onToggle={() => setPasswordVisible((current) => !current)}
-                />
-                {form.formState.errors.root?.server ? <p className="text-sm text-destructive">{form.formState.errors.root.server.message}</p> : null}
-                <div className="flex justify-end">
-                  <Link href="/forgot-password" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
-                </div>
-                <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
-                  {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
-                </Button>
-              </form>
-              <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
-                <Separator className="flex-1" />
-                <span className="text-eyebrow text-muted-foreground">or continue with</span>
-                <Separator className="flex-1" />
-              </div>
-              <OAuthButtons />
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </main>
+          <OAuthButtons />
+        </div>
+      )}
+    </AuthShell>
   );
 }

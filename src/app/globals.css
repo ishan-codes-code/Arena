@@ -158,11 +158,24 @@
     background-size: 40px 40px;
   }
 
+  .arena-grid-slab {
+    background-image: linear-gradient(to right, color-mix(in srgb, var(--slab-foreground) 6%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--slab-foreground) 6%, transparent) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+
   .arena-cut-panel {
     clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%, 0 0);
   }
 
   .arena-cut-panel-tight {
     clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 0);
+  }
+
+  .text-eyebrow {
+    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  .text-display {
+    @apply font-heading font-black tracking-[-0.07em];
   }
 }

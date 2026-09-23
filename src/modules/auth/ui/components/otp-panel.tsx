@@ -2,47 +2,50 @@
 
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
-
-import { EMAIL_OTP_LENGTH, resendSignupCode, verifyEmailOtp } from "@/modules/auth/lib/auth-client";
-import { Button } from "@/components/ui/button";
+import { motion, useReducedMotion } from "framer-motion";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Button } from "@/components/ui/button";
+import { AuthAlert } from "./auth-alert";
 
-type EmailVerificationProps = {
+type OtpPanelProps = {
   email: string;
+  type: "signup" | "recovery";
   onVerified: () => void;
 };
 
+const EMAIL_OTP_LENGTH = 8;
 const RESEND_COOLDOWN_SECONDS = 30;
-export function EmailVerification({ email, onVerified }: EmailVerificationProps) {
+
+export function OtpPanel({ email, type, onVerified }: OtpPanelProps) {
   const [token, setToken] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
-  const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (cooldown === 0) return;
-
-    const timer = window.setInterval(() => {
-      setCooldown((current) => Math.max(0, current - 1));
-    }, 1000);
-
+    const timer = window.setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [cooldown]);
 
+  const isSignup = type === "signup";
+
   async function handleVerify(value = token) {
     if (value.length !== EMAIL_OTP_LENGTH || isVerifying) return;
-
     setIsVerifying(true);
     setErrorMessage(null);
-    setMessage(null);
+    setSuccessMessage(null);
 
-    const { data, error } = await verifyEmailOtp(email, value);
+    const { verifyEmailOtp, verifyPasswordRecoveryOtp } = await import("@/modules/auth/lib/auth-client");
+    const verifyFn = isSignup ? verifyEmailOtp : verifyPasswordRecoveryOtp;
+    const { data, error } = await verifyFn(email, value);
 
     if (error || !data.session || !data.user?.email_confirmed_at) {
       setToken("");
-      setErrorMessage(error?.message ?? "We could not verify your email. Please try again.");
+      setErrorMessage(error?.message ?? (isSignup ? "We could not verify your email. Please try again." : "This recovery code is invalid or expired."));
       setIsVerifying(false);
       return;
     }
@@ -52,38 +55,50 @@ export function EmailVerification({ email, onVerified }: EmailVerificationProps)
 
   async function handleResend() {
     if (cooldown > 0 || isResending) return;
-
     setIsResending(true);
     setErrorMessage(null);
-    setMessage(null);
+    setSuccessMessage(null);
 
-    const { error } = await resendSignupCode(email);
+    const { resendSignupCode, resendPasswordRecoveryCode } = await import("@/modules/auth/lib/auth-client");
+    const resendFn = isSignup ? resendSignupCode : resendPasswordRecoveryCode;
+    const { error } = await resendFn(email);
 
     if (error) {
       setErrorMessage(error.message);
     } else {
       setCooldown(RESEND_COOLDOWN_SECONDS);
-      setMessage("A new verification code has been sent.");
+      setSuccessMessage("A new verification code has been sent.");
     }
 
     setIsResending(false);
   }
 
+  const headerText = isSignup ? "Check your email" : "Check your email";
+  const subText = isSignup
+    ? "We sent an 8-digit verification code to:"
+    : "We sent an 8-digit recovery code to:";
+  const labelText = isSignup ? "Verification code" : "Recovery code";
+  const buttonText = isSignup ? "Verify email" : "Verify recovery code";
+
   return (
-    <div className="grid gap-5">
+    <motion.div
+      layout
+      className="grid gap-5"
+      initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={reducedMotion ? false : { opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="grid gap-2">
-        <p className="font-heading text-xl font-bold">Check your email</p>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          We sent an 8-digit verification code to:
-        </p>
+        <p className="font-heading text-xl font-bold">{headerText}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{subText}</p>
         <p className="break-all font-mono text-sm text-foreground">{email}</p>
       </div>
       <div className="grid gap-2">
-        <label htmlFor="email-verification-code" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-          Verification code
+        <label htmlFor="otp-code" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+          {labelText}
         </label>
         <InputOTP
-          id="email-verification-code"
+          id="otp-code"
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={EMAIL_OTP_LENGTH}
@@ -102,18 +117,15 @@ export function EmailVerification({ email, onVerified }: EmailVerificationProps)
           </InputOTPGroup>
         </InputOTP>
       </div>
-      {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
-      {message ? <p className="text-sm text-primary">{message}</p> : null}
+      {errorMessage && <AuthAlert status="error">{errorMessage}</AuthAlert>}
+      {successMessage && <AuthAlert status="success">{successMessage}</AuthAlert>}
       <Button type="button" size="lg" disabled={token.length !== EMAIL_OTP_LENGTH || isVerifying} onClick={() => void handleVerify()}>
         {isVerifying ? <LoaderCircle className="animate-spin" /> : null}
-        {isVerifying ? "Verifying..." : "Verify email"}
+        {isVerifying ? "Verifying..." : buttonText}
       </Button>
-      <div className="grid gap-2 text-center">
-        <p className="text-sm text-muted-foreground">Didn&apos;t receive the code?</p>
-        <Button type="button" variant="ghost" disabled={cooldown > 0 || isResending} onClick={handleResend}>
+      <Button type="button" variant="ghost" disabled={cooldown > 0 || isResending} onClick={handleResend}>
           {isResending ? "Sending..." : cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
         </Button>
-      </div>
-    </div>
+    </motion.div>
   );
 }
