@@ -85,7 +85,7 @@ export function AuthShell({
                     href="/login"
                     aria-current={activeTab === "login" ? "page" : undefined}
                     className={cn(
-                      "px-2 py-3 text-center font-mono text-[10px] font-medium uppercase tracking-[0.12em] transition-colors sm:px-3 sm:tracking-[0.16em]",
+                      "px-2 py-3 text-center font-body text-[10px] font-medium uppercase tracking-[0.12em] transition-colors sm:px-3 sm:tracking-[0.16em]",
                       activeTab === "login"
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -97,7 +97,7 @@ export function AuthShell({
                     href="/signup"
                     aria-current={activeTab === "signup" ? "page" : undefined}
                     className={cn(
-                      "border-l border-border px-2 py-3 text-center font-mono text-[10px] font-medium uppercase tracking-[0.12em] transition-colors sm:px-3 sm:tracking-[0.16em]",
+                      "border-l border-border px-2 py-3 text-center font-body text-[10px] font-medium uppercase tracking-[0.12em] transition-colors sm:px-3 sm:tracking-[0.16em]",
                       activeTab === "signup"
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -155,7 +155,7 @@ export function AuthShell({
         </div>
       </div>
       <footer className="border-t border-border bg-card px-4 py-4 sm:px-6 lg:px-10">
-        <div className="mx-auto flex w-full max-w-[1440px] flex-col justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground sm:flex-row">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col justify-between gap-3 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground sm:flex-row">
           <span>Built for everyday players · Free entry, always.</span>
           <span>Not affiliated with or endorsed by Garena.</span>
         </div>

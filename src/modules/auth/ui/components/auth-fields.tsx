@@ -16,19 +16,21 @@ type FieldProps = {
 export function EmailField({ id, registration, error }: FieldProps) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor={id}>Email address</Label>
+      <Label htmlFor={id} className="font-body text-sm font-medium text-foreground">
+        Email address
+      </Label>
       <SmoothInput
         id={id}
         type="email"
         autoComplete="email"
         placeholder="you@example.com"
         aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id}-error` : undefined}
         wrapperClassName="max-w-none rounded-xl border border-input bg-transparent p-0 transition-colors has-[:focus-visible]:border-ring has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 aria-invalid:border-destructive"
-        className="h-11 px-4 font-mono text-sm placeholder:text-muted-foreground sm:h-12"
-        style={{ fontSize: "0.875rem" }}
+        className="h-11 px-4 font-body text-sm placeholder:text-muted-foreground sm:h-12"
         {...registration}
       />
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p id={`${id}-error`} className="text-sm text-destructive">{error}</p> : null}
     </div>
   );
 }
@@ -44,8 +46,10 @@ export function PasswordField({ id, registration, error, hint, placeholder = "En
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-4">
-        <Label htmlFor={id}>Password</Label>
-        {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+        <Label htmlFor={id} className="font-body text-sm font-medium text-foreground">
+          Password
+        </Label>
+        {hint ? <span className="font-body text-xs text-muted-foreground">{hint}</span> : null}
       </div>
       <div className="relative">
         <SmoothInput
@@ -53,10 +57,10 @@ export function PasswordField({ id, registration, error, hint, placeholder = "En
           type={visible ? "text" : "password"}
           autoComplete="current-password"
           placeholder={placeholder}
-          wrapperClassName="max-w-none rounded-xl border border-input bg-transparent p-0 transition-colors has-[:focus-visible]:border-ring has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 aria-invalid:border-destructive"
-          className="h-11 px-4 pr-10 font-mono text-sm placeholder:text-muted-foreground sm:h-12"
-          style={{ fontSize: "0.875rem" }}
           aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+          wrapperClassName="max-w-none rounded-xl border border-input bg-transparent p-0 transition-colors has-[:focus-visible]:border-ring has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 aria-invalid:border-destructive"
+          className="h-11 px-4 pr-10 font-body text-sm placeholder:text-muted-foreground sm:h-12"
           {...registration}
         />
         <Button
@@ -70,7 +74,7 @@ export function PasswordField({ id, registration, error, hint, placeholder = "En
           {visible ? <EyeOff /> : <Eye />}
         </Button>
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p id={`${id}-error`} className="text-sm text-destructive">{error}</p> : null}
     </div>
   );
 }
