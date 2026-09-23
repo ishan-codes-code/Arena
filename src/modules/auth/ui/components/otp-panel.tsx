@@ -91,10 +91,10 @@ export function OtpPanel({ email, type, onVerified }: OtpPanelProps) {
       <div className="grid gap-2">
         <p className="font-heading text-xl font-bold">{headerText}</p>
         <p className="text-sm leading-relaxed text-muted-foreground">{subText}</p>
-        <p className="break-all font-mono text-sm text-foreground">{email}</p>
+        <p className="break-all font-body text-sm text-foreground">{email}</p>
       </div>
       <div className="grid gap-2">
-        <label htmlFor="otp-code" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+        <label htmlFor="otp-code" className="font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           {labelText}
         </label>
         <InputOTP

@@ -70,8 +70,8 @@ export function LoginView({ error }: { error?: string }) {
       ) : (
         <div className="grid gap-5">
           <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
-            <p className="font-mono text-[10px] text-primary">Required *</p>
+            <p className="font-body text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
+            <p className="font-body text-[10px] text-primary">Required *</p>
           </div>
           <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
             <EmailField id="login-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
@@ -84,7 +84,7 @@ export function LoginView({ error }: { error?: string }) {
             />
             {form.formState.errors.root?.server ? <AuthAlert status="error">{form.formState.errors.root.server.message}</AuthAlert> : null}
             <div className="flex justify-end">
-              <Link href="/forgot-password" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
+              <Link href="/forgot-password" className="font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
             </div>
             <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}

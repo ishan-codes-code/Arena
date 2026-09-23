@@ -58,8 +58,8 @@ export function SignupView({ error }: { error?: string }) {
       ) : (
         <div className="grid gap-5">
           <div className="mb-3 flex items-end justify-between border-b border-border pb-2 sm:mb-10 sm:pb-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
-            <p className="font-mono text-[10px] text-primary">Required *</p>
+            <p className="font-body text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account details</p>
+            <p className="font-body text-[10px] text-primary">Required *</p>
           </div>
           <form className="grid gap-3 sm:gap-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
             <EmailField id="signup-email" registration={form.register("email")} error={form.formState.errors.email?.message} />
@@ -76,7 +76,7 @@ export function SignupView({ error }: { error?: string }) {
               {form.formState.isSubmitting ? <LoaderCircle className="animate-spin" /> : null}
               {form.formState.isSubmitting ? "Creating account..." : "Create account"}
             </Button>
-            <p className="hidden font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground sm:block">Sign up takes only an email and password.</p>
+            <p className="hidden font-body text-[10px] uppercase tracking-[0.1em] text-muted-foreground sm:block">Sign up takes only an email and password.</p>
           </form>
           <div className="my-3 flex items-center gap-2 sm:my-8 sm:gap-3">
             <Separator className="flex-1" />

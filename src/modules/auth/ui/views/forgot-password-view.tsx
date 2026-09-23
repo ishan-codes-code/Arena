@@ -45,8 +45,8 @@ export function ForgotPasswordView({ error }: { error?: string }) {
           <div className="grid gap-4">
             <p className="font-heading text-xl font-bold">Check your email</p>
             <p className="text-sm leading-relaxed text-muted-foreground">If an account is associated with that address, a recovery code has been sent to:</p>
-            <p className="break-all font-mono text-sm text-foreground">{submittedEmail}</p>
-            <Link href={`/reset-password?email=${encodeURIComponent(submittedEmail)}`} className="inline-flex min-h-11 items-center justify-center bg-primary px-4 font-mono text-xs font-bold uppercase tracking-[0.12em] text-primary-foreground">Enter recovery code</Link>
+            <p className="break-all font-body text-sm text-foreground">{submittedEmail}</p>
+            <Link href={`/reset-password?email=${encodeURIComponent(submittedEmail)}`} className="inline-flex min-h-11 items-center justify-center bg-primary px-4 font-body text-xs font-bold uppercase tracking-[0.12em] text-primary-foreground">Enter recovery code</Link>
           </div>
         ) : (
           <>
@@ -59,7 +59,7 @@ export function ForgotPasswordView({ error }: { error?: string }) {
                 {form.formState.isSubmitting ? "Sending code..." : "Send recovery code"}
               </Button>
             </form>
-            <Link href="/login" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Back to login</Link>
+            <Link href="/login" className="font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Back to login</Link>
           </>
         )}
       </div>

@@ -91,7 +91,7 @@ export function ArenaSidebar() {
       <SidebarFooter>
         <div className="flex items-center justify-between rounded-md border border-sidebar-border bg-sidebar-accent/40 p-2 group-data-[collapsible=icon]/sidebar-wrapper:justify-center group-data-[collapsible=icon]/sidebar-wrapper:border-0 group-data-[collapsible=icon]/sidebar-wrapper:bg-transparent">
           <div className="min-w-0 group-data-[collapsible=icon]/sidebar-wrapper:hidden">
-            <p className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-sidebar-foreground/50">Arena MVP</p>
+            <p className="font-body text-[0.58rem] uppercase tracking-[0.16em] text-sidebar-foreground/50">Arena MVP</p>
             <p className="mt-1 truncate text-xs text-sidebar-foreground/75">Free entry, always.</p>
           </div>
           <ThemeToggleButton variant="circle" start="top-right" className="!size-8 !rounded-md !border-sidebar-border !bg-transparent !p-1 !shadow-none hover:!bg-sidebar-accent" />

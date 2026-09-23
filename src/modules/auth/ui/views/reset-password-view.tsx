@@ -84,7 +84,7 @@ export function ResetPasswordView({ email }: ResetPasswordViewProps) {
       {!email ? (
         <div className="grid gap-4">
           <p className="text-sm text-destructive">This recovery request is missing an email address.</p>
-          <Link href="/forgot-password" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Start again</Link>
+          <Link href="/forgot-password" className="font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Start again</Link>
         </div>
       ) : isCheckingSession ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="animate-spin" /> Checking recovery session...</p>
