@@ -25,6 +25,12 @@
       "skillPath": ".claude/skills/design-system/SKILL.md",
       "computedHash": "c50a1a77394e988b2593ed97f95ae28b5167eb8a826385b5996d67e398d15b6a"
     },
+    "drizzle-orm-expert": {
+      "source": "phoroth/AGENTIC",
+      "sourceType": "github",
+      "skillPath": "skills/drizzle-orm-expert/SKILL.md",
+      "computedHash": "361120be741f4229b70319df93e7123448e3ccf48c2fb25fa31948a7b21228f5"
+    },
     "framer-motion-gestures": {
       "source": "C-Jeril/framer-motion-skills",
       "sourceType": "github",
@@ -77,7 +83,7 @@
       "source": "supabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/supabase/SKILL.md",
-      "computedHash": "583344c20e90f3654dbb0632f088d89fd9f1dde8ac85e8a644dd12eee59b1380"
+      "computedHash": "bcbf1c542906f109e9dc3457c389a9cc85854eb90fa6b5cba2e5c131140305e1"
     },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
