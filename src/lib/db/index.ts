@@ -14,7 +14,7 @@ export function getDb() {
   }
 
   if (!_db) {
-    const sql = postgres(url, { max: 1 });
+    const sql = postgres(url, { max: 1, prepare: false });
     _db = drizzle(sql, { schema });
   }
 
