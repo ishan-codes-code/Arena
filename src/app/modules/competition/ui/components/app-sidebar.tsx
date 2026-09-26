@@ -64,16 +64,20 @@ export function ArenaSidebar() {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4">
-        <Link href="/" className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
+        <Link
+          href="/"
+          className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:justify-center"
+        >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-display text-sm font-black text-sidebar-primary-foreground">
             A
           </span>
-          <span className="font-display text-lg font-black tracking-tight text-sidebar-foreground group-data-[collapsible=icon]/sidebar-wrapper:hidden">
+
+          <span className="font-display text-lg font-black tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden">
             ARENA<span className="text-sidebar-primary">.</span>
           </span>
         </Link>
       </SidebarHeader>
-      <SidebarSeparator />
+      
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Compete</SidebarGroupLabel>
@@ -89,12 +93,20 @@ export function ArenaSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex items-center justify-between rounded-md border border-sidebar-border bg-sidebar-accent/40 p-2 group-data-[collapsible=icon]/sidebar-wrapper:justify-center group-data-[collapsible=icon]/sidebar-wrapper:border-0 group-data-[collapsible=icon]/sidebar-wrapper:bg-transparent">
-          <div className="min-w-0 group-data-[collapsible=icon]/sidebar-wrapper:hidden">
-            <p className="font-body text-[0.58rem] uppercase tracking-[0.16em] text-sidebar-foreground/50">Arena MVP</p>
-            <p className="mt-1 truncate text-xs text-sidebar-foreground/75">Free entry, always.</p>
+        <div className="flex items-center justify-between rounded-md border border-sidebar-border bg-sidebar-accent/40 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent">
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <p className="font-body text-[0.58rem] uppercase tracking-[0.16em] text-sidebar-foreground/50">
+              Arena MVP
+            </p>
+            <p className="mt-1 truncate text-xs text-sidebar-foreground/75">
+              Free entry, always.
+            </p>
           </div>
-          <ThemeToggleButton variant="circle" start="top-right" className="!size-8 !rounded-md !border-sidebar-border !bg-transparent !p-1 !shadow-none hover:!bg-sidebar-accent" />
+          <ThemeToggleButton
+            variant="circle"
+            start="top-right"
+            className="!size-8 !shrink-0 !rounded-md !border-sidebar-border !bg-transparent !p-1 !shadow-none hover:!bg-sidebar-accent"
+          />
         </div>
       </SidebarFooter>
       <SidebarRail />

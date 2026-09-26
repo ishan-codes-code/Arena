@@ -6,7 +6,7 @@ import { Gamepad2 } from "lucide-react";
 import type { Game } from "@/lib/db/schema";
 import { FeaturedCarousel } from "../components/featured-carousel";
 import { GameRail } from "../components/game-rail";
-import { GamesNavbar } from "../components/games-navbar";
+import { Navbar } from "@/components/navbar";
 
 type GamesResponse = { games: Game[] };
 
@@ -66,8 +66,8 @@ export function GamesView() {
   const comingSoonGames = games.filter((g) => g.status === "coming_soon");
 
   return (
-    <main className="min-h-screen bg-background pt-18 text-foreground">
-      <GamesNavbar />
+    <main className="min-h-screen bg-background text-foreground">
+      <Navbar />
 
       {featuredGames.length > 0 && (
         <section

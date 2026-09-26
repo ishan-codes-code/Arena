@@ -32,13 +32,13 @@ export function FeaturedCarousel({ games }: FeaturedCarouselProps) {
     <Carousel
       opts={{ loop: true }}
       plugins={[plugin]}
-      className="relative h-[calc(100vh-4.5rem)] w-full"
+      className="relative w-full"
       onMouseEnter={plugin.stop}
       onMouseLeave={plugin.reset}
     >
       <CarouselContent className="h-full">
         {games.map((game) => (
-          <CarouselItem key={game.id} className="pl-0">
+          <CarouselItem key={game.id}>
             <FeaturedSlide game={game} />
           </CarouselItem>
         ))}
