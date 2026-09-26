@@ -6,6 +6,7 @@ import { Gamepad2 } from "lucide-react";
 import type { Game } from "@/lib/db/schema";
 import { FeaturedCarousel } from "../components/featured-carousel";
 import { GameRail } from "../components/game-rail";
+import { GamesNavbar } from "../components/games-navbar";
 
 type GamesResponse = { games: Game[] };
 
@@ -13,7 +14,9 @@ function GamesError({ message }: { message: string }): ReactNode {
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-10">
       <div className="rounded-lg border border-border bg-card p-8 text-center">
-        <p className="font-display text-2xl font-black tracking-[-0.06em]">Something went wrong</p>
+        <p className="font-display text-2xl font-black tracking-[-0.06em]">
+          Something went wrong
+        </p>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
       </div>
     </div>
@@ -63,9 +66,15 @@ export function GamesView() {
   const comingSoonGames = games.filter((g) => g.status === "coming_soon");
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-background pt-18 text-foreground">
+      <GamesNavbar />
+
       {featuredGames.length > 0 && (
-        <section aria-label="Featured games" className="border-b border-border">
+        <section
+          aria-label="Featured games"
+          className="relative"
+          style={{ height: "calc(100vh - 4.5rem)" }}
+        >
           <FeaturedCarousel games={featuredGames} />
         </section>
       )}
@@ -82,8 +91,12 @@ export function GamesView() {
         {activeGames.length === 0 && comingSoonGames.length === 0 && (
           <section className="py-16 text-center">
             <Gamepad2 className="mx-auto size-12 text-muted-foreground" />
-            <p className="mt-4 font-display text-2xl font-black tracking-[-0.06em]">No games yet</p>
-            <p className="mt-2 text-sm text-muted-foreground">Check back soon — new titles are arriving.</p>
+            <p className="mt-4 font-display text-2xl font-black tracking-[-0.06em]">
+              No games yet
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Check back soon — new titles are arriving.
+            </p>
           </section>
         )}
       </div>
