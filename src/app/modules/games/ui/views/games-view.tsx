@@ -72,8 +72,7 @@ export function GamesView() {
       {featuredGames.length > 0 && (
         <section
           aria-label="Featured games"
-          className="relative"
-          style={{ height: "calc(100vh - 4.5rem)" }}
+          className="relative w-full aspect-[16/9] md:aspect-none md:h-[calc(100vh_-_4.5rem)] overflow-hidden"
         >
           <FeaturedCarousel games={featuredGames} />
         </section>

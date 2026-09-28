@@ -23,7 +23,7 @@ type FeaturedCarouselProps = {
 
 export function FeaturedCarousel({ games }: FeaturedCarouselProps) {
   const [plugin] = React.useState(() =>
-    autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
+    autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })
   );
 
   if (games.length === 0) return null;
@@ -32,7 +32,7 @@ export function FeaturedCarousel({ games }: FeaturedCarouselProps) {
     <Carousel
       opts={{ loop: true }}
       plugins={[plugin]}
-      className="relative w-full"
+      className="relative h-full w-full"
       onMouseEnter={plugin.stop}
       onMouseLeave={plugin.reset}
     >
@@ -96,7 +96,7 @@ function FeaturedSlide({ game }: { game: Game }) {
   const hasImage = Boolean(game.banner_url);
 
   return (
-    <div className="relative h-[calc(100vh-4.5rem)] w-full overflow-hidden bg-slab">
+    <div className="relative h-full w-full overflow-hidden bg-slab">
       {hasImage ? (
         <Image
           src={game.banner_url as string}
@@ -104,7 +104,7 @@ function FeaturedSlide({ game }: { game: Game }) {
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-contain md:object-cover"
         />
       ) : (
         <div className="flex h-full items-center justify-center bg-slab">
