@@ -44,10 +44,10 @@ export function FeaturedCarousel({ games }: FeaturedCarouselProps) {
         ))}
       </CarouselContent>
 
-      <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring" />
-      <CarouselNext className="right-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring" />
+      <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex" />
+      <CarouselNext className="right-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex" />
 
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+      <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-2 sm:bottom-4">
         <SlideIndicators games={games} />
       </div>
     </Carousel>
@@ -104,7 +104,7 @@ function FeaturedSlide({ game }: { game: Game }) {
           fill
           priority
           sizes="100vw"
-          className="object-contain md:object-cover"
+          className="object-contain"
         />
       ) : (
         <div className="flex h-full items-center justify-center bg-slab">
@@ -114,31 +114,31 @@ function FeaturedSlide({ game }: { game: Game }) {
       <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
 
-      <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8 lg:p-12">
-        <div className="flex items-center gap-3">
+      <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-8 lg:p-12">
+        <div className="flex items-center gap-2 sm:gap-3">
           {game.logo_url && (
-            <div className="relative size-14 overflow-hidden rounded-sm bg-black/40 p-2 sm:size-16">
-              <Image src={game.logo_url} alt="" fill sizes="64px" className="object-contain" />
+            <div className="relative size-10 overflow-hidden rounded-sm bg-black/40 p-1.5 sm:size-14">
+              <Image src={game.logo_url} alt="" fill sizes="56px" className="object-contain" />
             </div>
           )}
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground sm:text-[10px]">
             Featured · {game.status.replace("_", " ")}
           </span>
         </div>
-        <h2 className="mt-4 max-w-3xl font-display text-4xl font-black leading-[0.9] tracking-[-0.07em] sm:text-6xl lg:text-[5.5rem]">
+        <h2 className="mt-3 max-w-3xl font-display text-3xl font-black leading-[0.9] tracking-[-0.07em] sm:mt-4 sm:text-5xl lg:text-[5rem]">
           {game.name}
         </h2>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground sm:mt-6 sm:text-lg">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
           {game.description ?? "Compete in free-entry tournaments on Arena."}
         </p>
-        <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground sm:mt-8">
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:mt-6 sm:gap-4">
           {game.developer && (
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em]">
+            <span className="font-mono text-[9px] uppercase tracking-[0.12em] sm:text-[10px]">
               Dev: {game.developer}
             </span>
           )}
           {game.publisher && (
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em]">
+            <span className="font-mono text-[9px] uppercase tracking-[0.12em] sm:text-[10px]">
               Publisher: {game.publisher}
             </span>
           )}

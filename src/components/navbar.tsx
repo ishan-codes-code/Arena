@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { CircleDot, ArrowUpRight } from "lucide-react"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import type { Session } from "@supabase/supabase-js"
 import { signOut } from "@/modules/auth/lib/auth-client"
 
 export const Navbar = () => {
   const router = useRouter()
-  const [session, setSession] = useState<any>(null)
+  const [session, setSession] = useState<Session | null>(null)
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()

@@ -70,11 +70,15 @@ export function GamesView() {
       <Navbar />
 
       {featuredGames.length > 0 && (
-        <section
-          aria-label="Featured games"
-          className="relative w-full aspect-[16/9] md:aspect-none md:h-[calc(100vh_-_4.5rem)] overflow-hidden"
-        >
-          <FeaturedCarousel games={featuredGames} />
+        <section aria-label="Featured games" className="relative w-full">
+          <div className="mx-auto max-w-[1440px] px-4 pt-8 sm:px-6 lg:px-10">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Featured
+            </span>
+          </div>
+          <div className="relative w-full aspect-[16/9]">
+            <FeaturedCarousel games={featuredGames} />
+          </div>
         </section>
       )}
 
