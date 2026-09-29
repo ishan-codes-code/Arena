@@ -1,7 +1,6 @@
 import {
   ArrowUpRight,
   ChevronRight,
-  CircleDot,
   Gamepad2,
   Medal,
   ShieldCheck,
@@ -12,8 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Navbar } from "@/components/navbar";
+
 
 const tournaments = [
   { name: "Clash Squad // Night Shift", meta: "Bermuda · Solo", time: "09:00 PM", slots: "42 / 48", prize: "Top 3 vouchers", live: true },
@@ -25,8 +23,6 @@ export function HomeView() {
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
 
-      <Navbar/>
-      
       <div className="arena-grid">
         <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 pb-12 pt-8 sm:px-6 sm:pt-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:gap-12 lg:px-10 lg:pb-16 lg:pt-16">
           <div className="flex min-w-0 flex-col justify-between gap-10">

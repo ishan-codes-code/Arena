@@ -6,7 +6,8 @@ import { Gamepad2 } from "lucide-react";
 import type { Game } from "@/lib/db/schema";
 import { FeaturedCarousel } from "../components/featured-carousel";
 import { GameRail } from "../components/game-rail";
-import { Navbar } from "@/components/navbar";
+import { ComingSoonCarousel } from "../components/coming-soon-carousel";
+import Loader from "@/components/kokonutui/loader";
 
 type GamesResponse = { games: Game[] };
 
@@ -18,26 +19,6 @@ function GamesError({ message }: { message: string }): ReactNode {
           Something went wrong
         </p>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
-      </div>
-    </div>
-  );
-}
-
-function GamesSkeleton(): ReactNode {
-  return (
-    <div className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-10">
-      <div className="mb-10 h-48 rounded-lg bg-muted animate-pulse" />
-      <div className="mb-6 h-8 w-48 rounded bg-muted animate-pulse" />
-      <div className="mb-12 flex gap-4 overflow-hidden">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-48 w-64 rounded-lg bg-muted animate-pulse" />
-        ))}
-      </div>
-      <div className="mb-6 h-8 w-48 rounded bg-muted animate-pulse" />
-      <div className="flex gap-4 overflow-hidden">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-48 w-64 rounded-lg bg-muted animate-pulse" />
-        ))}
       </div>
     </div>
   );
@@ -58,20 +39,22 @@ export function GamesView() {
   }, []);
 
   if (error) return GamesError({ message: error });
-  if (!data) return GamesSkeleton();
+  if (!data) return <Loader />;
 
   const games = data.games;
   const featuredGames = games.filter((g) => g.is_featured);
   const activeGames = games.filter((g) => g.status === "active");
   const comingSoonGames = games.filter((g) => g.status === "coming_soon");
 
+  const hasFeatured = featuredGames.length > 0;
+  const hasComingSoon = comingSoonGames.length > 0;
+  const hasActive = activeGames.length > 0;
+
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <Navbar />
-
-      {featuredGames.length > 0 && (
+      {hasFeatured && (
         <section aria-label="Featured games" className="relative w-full">
-          <div className="mx-auto max-w-[1440px] px-4 pt-8 sm:px-6 lg:px-10">
+          <div className="mx-auto max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-10">
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Featured
             </span>
@@ -83,15 +66,18 @@ export function GamesView() {
       )}
 
       <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-10">
-        <GameRail title="ALL GAMES" games={activeGames} href="/games" />
+        {hasActive && <GameRail title="ALL GAMES" games={activeGames} href="/games" />}
 
-        {comingSoonGames.length > 0 && (
+        {hasComingSoon && (
           <section className="mt-16">
-            <GameRail title="COMING SOON" games={comingSoonGames} />
+            <h2 className="font-display text-3xl font-black tracking-[-0.06em] sm:text-4xl mb-6">
+              COMING SOON
+            </h2>
+            <ComingSoonCarousel games={comingSoonGames} />
           </section>
         )}
 
-        {activeGames.length === 0 && comingSoonGames.length === 0 && (
+        {!hasFeatured && !hasActive && !hasComingSoon && (
           <section className="py-16 text-center">
             <Gamepad2 className="mx-auto size-12 text-muted-foreground" />
             <p className="mt-4 font-display text-2xl font-black tracking-[-0.06em]">

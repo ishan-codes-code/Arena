@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import type { Game } from "@/lib/db/schema";
+import { ExternalLink } from "@/components/animate-ui/icons/external-link";
 
 type GameCardProps = {
   game: Game;
@@ -37,9 +39,18 @@ export function GameCard({ game }: GameCardProps) {
 
       <div className="flex flex-1 flex-col gap-2 p-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-base font-bold leading-tight tracking-[-0.03em]">
-            {game.short_name ?? game.name}
-          </h3>
+          <Link
+            href={`/tournaments/${game.slug}`}
+            className="inline-flex items-center gap-1.5 text-foreground transition-colors hover:text-primary"
+          >
+            <h3 className="font-display text-base font-bold leading-tight tracking-[-0.03em]">
+              {game.short_name ?? game.name}
+            </h3>
+            <ExternalLink
+              animateOnHover
+              className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+            />
+          </Link>
           {game.logo_url && (
             <span className="relative mt-0.5 size-7 shrink-0 overflow-hidden rounded-sm bg-muted">
               <Image
