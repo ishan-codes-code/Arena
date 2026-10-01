@@ -4,6 +4,7 @@ import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { ThemeProvider } from "@/app/modules/theme/ui/components/theme-provider";
 import { AppShell } from "@/app/app-shell";
 import { RouteTransition } from "@/components/route-transition";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const displayFont = Archivo({
@@ -37,11 +38,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <AppShell>
-            <RouteTransition>{children}</RouteTransition>
-          </AppShell>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+            <AppShell>
+              <RouteTransition>{children}</RouteTransition>
+            </AppShell>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

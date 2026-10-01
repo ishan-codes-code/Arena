@@ -1,15 +1,15 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Gamepad2 } from "lucide-react";
 
-import type { Game } from "@/lib/db/schema";
+import type { GamesResponse } from "@/lib/api/games";
+import { gamesQueryKey, fetchGamesQuery } from "@/app/modules/games/queries/games";
 import { FeaturedCarousel } from "../components/featured-carousel";
 import { GameRail } from "../components/game-rail";
 import { ComingSoonCarousel } from "../components/coming-soon-carousel";
 import { Skeleton } from "@/components/ui/skeleton";
-
-type GamesResponse = { games: Game[] };
 
 function GamesError({ message }: { message: string }): ReactNode {
   return (
@@ -53,21 +53,18 @@ function GamesSkeleton(): ReactNode {
 }
 
 export function GamesView() {
-  const [data, setData] = useState<GamesResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data,
+    error,
+    isLoading,
+    isError,
+  } = useQuery<GamesResponse, Error>({
+    queryKey: gamesQueryKey,
+    queryFn: fetchGamesQuery,
+  });
 
-  useEffect(() => {
-    fetch("/api/games")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch games.");
-        return res.json();
-      })
-      .then((json: GamesResponse) => setData(json))
-      .catch((err: Error) => setError(err.message));
-  }, []);
-
-  if (error) return GamesError({ message: error });
-  if (!data) return GamesSkeleton();
+  if (isError) return GamesError({ message: error?.message ?? "Unknown error" });
+  if (isLoading || !data) return GamesSkeleton();
 
   const games = data.games;
   const featuredGames = games.filter((g) => g.is_featured);
