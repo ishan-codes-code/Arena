@@ -43,12 +43,12 @@ export function GameCard({ game }: GameCardProps) {
             href={`/tournaments/${game.slug}`}
             className="inline-flex items-center gap-1.5 text-foreground transition-colors hover:text-primary"
           >
-            <h3 className="font-display text-base font-bold leading-tight tracking-[-0.03em]">
+            <h3 className="font-display text-base font-bold leading-tight tracking-[-0.03em] align-middle">
               {game.short_name ?? game.name}
             </h3>
             <ExternalLink
               animateOnHover
-              className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+              className="size-3.5 shrink-0 text-muted-foreground align-middle"
             />
           </Link>
           {game.logo_url && (

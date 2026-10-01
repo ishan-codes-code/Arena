@@ -14,6 +14,8 @@ import {
   useCarousel,
 } from "@/components/ui/carousel";
 import autoplay from "embla-carousel-autoplay";
+import Link from "next/link";
+import { ExternalLink } from "@/components/animate-ui/icons/external-link";
 
 import type { Game } from "@/lib/db/schema";
 
@@ -126,7 +128,10 @@ function FeaturedSlide({ game }: { game: Game }) {
           </span>
         </div>
         <h2 className="mt-3 max-w-3xl font-display text-3xl font-black leading-[0.9] tracking-[-0.07em] sm:mt-4 sm:text-5xl lg:text-[5rem]">
-          {game.name}
+          <Link href={`/tournaments/${game.slug}`} className="inline-flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+            {game.name}
+            <ExternalLink animateOnHover className="size-5 shrink-0 text-muted-foreground align-middle" />
+          </Link>
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
           {game.description ?? "Compete in free-entry tournaments on Arena."}

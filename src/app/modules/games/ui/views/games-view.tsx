@@ -7,7 +7,7 @@ import type { Game } from "@/lib/db/schema";
 import { FeaturedCarousel } from "../components/featured-carousel";
 import { GameRail } from "../components/game-rail";
 import { ComingSoonCarousel } from "../components/coming-soon-carousel";
-import Loader from "@/components/kokonutui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type GamesResponse = { games: Game[] };
 
@@ -19,6 +19,34 @@ function GamesError({ message }: { message: string }): ReactNode {
           Something went wrong
         </p>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function GamesSkeleton(): ReactNode {
+  return (
+    <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-10">
+      {/* Featured skeleton */}
+      <div className="mb-8">
+        <Skeleton className="h-4 w-24 mb-6" />
+        <Skeleton className="h-[500px] w-full rounded-lg" />
+      </div>
+
+      {/* All Games rail skeleton */}
+      <Skeleton className="h-8 w-48 mb-6" />
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[320px] w-[280px] shrink-0 rounded-lg" />
+        ))}
+      </div>
+
+      {/* Coming Soon skeleton */}
+      <Skeleton className="h-10 w-64 mt-16 mb-6" />
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-[400px] w-[360px] shrink-0 rounded-lg" />
+        ))}
       </div>
     </div>
   );
@@ -39,7 +67,7 @@ export function GamesView() {
   }, []);
 
   if (error) return GamesError({ message: error });
-  if (!data) return <Loader />;
+  if (!data) return GamesSkeleton();
 
   const games = data.games;
   const featuredGames = games.filter((g) => g.is_featured);
