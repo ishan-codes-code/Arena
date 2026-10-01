@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactNode } from "react"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import { TRPCReactProvider } from "@/app/trpc/client"
 
 /**
  * Create a stable QueryClient instance that persists across re-renders
@@ -20,13 +21,15 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {process.env.NODE_ENV === "development" ? (
         <>
-          {children}
+          <TRPCReactProvider queryClient={queryClient}>
+            {children}
+          </TRPCReactProvider>
           <div style={{ position: "fixed", bottom: 0, right: 0 }}>
             <ReactQueryDevtools initialIsOpen={false} />
           </div>
         </>
       ) : (
-        children
+        <TRPCReactProvider queryClient={queryClient}>{children}</TRPCReactProvider>
       )}
     </QueryClientProvider>
   )

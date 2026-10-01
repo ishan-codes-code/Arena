@@ -1,6 +1,28 @@
+import { useTRPC } from "@/app/trpc/client";
 import { useQuery } from "@tanstack/react-query";
-import type { GamesResponse } from "@/lib/api/games";
-import { fetchGames } from "@/lib/api/games";
+
+// Drizzle's schema types declare timestamps as Date, but the postgres driver
+// with prepare: false returns strings. The UI doesn't consume date fields, so
+// we normalize the inferred type to match runtime behavior.
+export type Game = {
+  id: string;
+  name: string;
+  slug: string;
+  short_name: string | null;
+  description: string | null;
+  developer: string | null;
+  publisher: string | null;
+  icon_url: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  status: "active" | "coming_soon" | "inactive" | "archived";
+  is_featured: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type GamesResponse = { games: Game[] };
 
 /**
  * Stable, descriptive query key for the games list.
@@ -10,22 +32,12 @@ import { fetchGames } from "@/lib/api/games";
 export const gamesQueryKey = ["games", "list"] as const;
 
 /**
- * Query function wrapper that fetches games from the API endpoint.
- * This keeps the query function separate from the view component,
- * allowing for reuse and easier testing.
- */
-export function fetchGamesQuery() {
-  return fetchGames();
-}
-
-/**
- * Hook that wraps useQuery for fetching games.
- * This hook can be reused across the games module without duplicating
- * query logic.
+ * Hook that wraps useQuery for fetching games via tRPC.
+ * Uses the typed queryOptions factory from useTRPC() so the
+ * response type is inferred from AppRouter automatically.
  */
 export function useGamesQuery() {
-  return useQuery<GamesResponse, Error>({
-    queryKey: gamesQueryKey,
-    queryFn: fetchGamesQuery,
-  });
+  const trpc = useTRPC();
+
+  return useQuery(trpc.games.list.queryOptions());
 }
