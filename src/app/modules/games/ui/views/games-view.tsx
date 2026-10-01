@@ -63,7 +63,7 @@ export function GamesView() {
     queryFn: fetchGamesQuery,
   });
 
-  if (isError) return GamesError({ message: error?.message ?? "Unknown error" });
+  if (isError && !data) return GamesError({ message: error?.message ?? "Unknown error" });
   if (isLoading || !data) return GamesSkeleton();
 
   const games = data.games;
