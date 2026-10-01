@@ -1,11 +1,9 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Gamepad2 } from "lucide-react";
 
-import type { GamesResponse } from "@/lib/api/games";
-import { gamesQueryKey, fetchGamesQuery } from "@/app/modules/games/queries/games";
+import { useGamesQuery } from "@/app/modules/games/queries/games";
 import { FeaturedCarousel } from "../components/featured-carousel";
 import { GameRail } from "../components/game-rail";
 import { ComingSoonCarousel } from "../components/coming-soon-carousel";
@@ -58,10 +56,7 @@ export function GamesView() {
     error,
     isLoading,
     isError,
-  } = useQuery<GamesResponse, Error>({
-    queryKey: gamesQueryKey,
-    queryFn: fetchGamesQuery,
-  });
+  } = useGamesQuery();
 
   if (isError && !data) return GamesError({ message: error?.message ?? "Unknown error" });
   if (isLoading || !data) return GamesSkeleton();

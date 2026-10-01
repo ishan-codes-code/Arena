@@ -12,7 +12,7 @@ import {
 import autoplay from "embla-carousel-autoplay";
 
 import { ComingSoonCard } from "./coming-soon-card";
-import type { Game } from "@/lib/db/schema";
+import type { Game } from "../../queries/games";
 
 type ComingSoonCarouselProps = {
   games: Game[];

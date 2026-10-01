@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import type { Game } from "@/lib/db/schema";
+import type { Game } from "../../queries/games";
 
 type ComingSoonCardProps = {
   game: Game;

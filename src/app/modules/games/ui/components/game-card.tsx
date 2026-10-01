@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import type { Game } from "@/lib/db/schema";
+import type { Game } from "../../queries/games";
 import { ExternalLink } from "@/components/animate-ui/icons/external-link";
 
 type GameCardProps = {

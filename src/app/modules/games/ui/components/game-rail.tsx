@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { Game } from "@/lib/db/schema";
+import type { Game } from "../../queries/games";
 import { GameCard } from "./game-card";
 import { useIsMobile } from "@/hooks/use-mobile";
 

@@ -17,7 +17,7 @@ import autoplay from "embla-carousel-autoplay";
 import Link from "next/link";
 import { ExternalLink } from "@/components/animate-ui/icons/external-link";
 
-import type { Game } from "@/lib/db/schema";
+import type { Game } from "../../queries/games";
 
 type FeaturedCarouselProps = {
   games: Game[];
