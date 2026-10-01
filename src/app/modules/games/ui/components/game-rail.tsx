@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Game } from "@/lib/db/schema";
 import { GameCard } from "./game-card";
@@ -16,18 +16,29 @@ type GameRailProps = {
 export function GameRail({ title, games, href, ariaLabel }: GameRailProps) {
   const isMobile = useIsMobile();
   const [showLeftFade, setShowLeftFade] = useState(false);
-  const [showRightFade, setShowRightFade] = useState(true);
+  const [showRightFade, setShowRightFade] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  if (games.length === 0) return null;
-
-  const handleScroll = () => {
+  const updateFades = useCallback(() => {
     const element = scrollRef.current;
     if (!element) return;
+
     const { scrollLeft, scrollWidth, clientWidth } = element;
-    setShowLeftFade(scrollLeft > 4);
-    setShowRightFade(scrollLeft + clientWidth < scrollWidth - 4);
-  };
+    const hasOverflow = scrollWidth > clientWidth + 4;
+    setShowLeftFade(hasOverflow && scrollLeft > 4);
+    setShowRightFade(
+      hasOverflow && scrollLeft + clientWidth < scrollWidth - 4
+    );
+  }, []);
+
+  useEffect(() => {
+    updateFades();
+    window.addEventListener("resize", updateFades);
+
+    return () => window.removeEventListener("resize", updateFades);
+  }, [games.length, updateFades]);
+
+  if (games.length === 0) return null;
 
   const scrollLeft = () => {
     const element = scrollRef.current;
@@ -64,7 +75,7 @@ export function GameRail({ title, games, href, ariaLabel }: GameRailProps) {
       <div className="relative">
         <div
           ref={scrollRef}
-          onScroll={handleScroll}
+          onScroll={updateFades}
           className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
           role="region"
           aria-label={`${title} carousel`}

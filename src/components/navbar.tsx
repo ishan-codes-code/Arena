@@ -15,9 +15,22 @@ export const Navbar = () => {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
+    let isMounted = true
+
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
+      if (isMounted) setSession(data.session)
     })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) setSession(session)
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function handleSignOut() {
