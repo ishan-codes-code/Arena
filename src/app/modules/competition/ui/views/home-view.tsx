@@ -1,7 +1,6 @@
 import {
   ArrowUpRight,
   ChevronRight,
-  CircleDot,
   Gamepad2,
   Medal,
   ShieldCheck,
@@ -12,7 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+
 
 const tournaments = [
   { name: "Clash Squad // Night Shift", meta: "Bermuda · Solo", time: "09:00 PM", slots: "42 / 48", prize: "Top 3 vouchers", live: true },
@@ -23,22 +22,6 @@ const tournaments = [
 export function HomeView() {
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
-      <header className="border-b border-border bg-background/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger />
-            <Link href="/" className="hidden items-center gap-2 sm:flex">
-              <span className="flex size-8 items-center justify-center bg-primary font-display text-sm font-black text-primary-foreground">A</span>
-              <span className="font-display text-lg font-black tracking-[-0.04em]">ARENA<span className="text-primary">.</span></span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:flex"><CircleDot className="size-3 text-live" /> 1,248 players online</span>
-            <Link href="/login" className="inline-flex min-h-9 items-center px-2 font-body text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground">Log in</Link>
-            <Link href="/signup" className="inline-flex min-h-9 items-center gap-2 bg-primary px-3 font-body text-[10px] font-bold uppercase tracking-[0.14em] text-primary-foreground transition-transform hover:-translate-y-0.5">Enter Arena <ArrowUpRight className="size-3.5" /></Link>
-          </div>
-        </div>
-      </header>
 
       <div className="arena-grid">
         <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 pb-12 pt-8 sm:px-6 sm:pt-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:gap-12 lg:px-10 lg:pb-16 lg:pt-16">
