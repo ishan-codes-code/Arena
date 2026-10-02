@@ -6,8 +6,6 @@ import {
   useEffectEvent,
   useRef,
   useState,
-  type ChangeEvent,
-  type KeyboardEvent,
   type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -26,7 +24,6 @@ import {
   Check,
   CircleCheck,
   ImageOff,
-  Pencil,
   Plus,
   X,
 } from "lucide-react";
@@ -246,57 +243,9 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function BasicInformationStep({
-  form,
-  isSlugCustomized,
-  setIsSlugCustomized,
-}: {
-  form: UseFormReturn<AddGameValues>;
-  isSlugCustomized: boolean;
-  setIsSlugCustomized: (value: boolean) => void;
-}) {
-  const [isSlugEditing, setIsSlugEditing] = useState(false);
-  const slugInputRef = useRef<HTMLInputElement>(null);
-  const slugAtEditStart = useRef("");
-  const wasCustomizedAtEditStart = useRef(false);
+function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) {
   const nameRegistration = form.register("name");
-  const slugRegistration = form.register("slug");
-
-  useEffect(() => {
-    if (isSlugEditing) slugInputRef.current?.focus();
-  }, [isSlugEditing]);
-
-  const startSlugEditing = () => {
-    slugAtEditStart.current = form.getValues("slug");
-    wasCustomizedAtEditStart.current = isSlugCustomized;
-    setIsSlugEditing(true);
-  };
-
-  const finishSlugEditing = () => setIsSlugEditing(false);
-
-  const cancelSlugEditing = () => {
-    form.setValue("slug", slugAtEditStart.current, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    setIsSlugCustomized(wasCustomizedAtEditStart.current);
-    setIsSlugEditing(false);
-  };
-
-  const handleSlugChange = (event: ChangeEvent<HTMLInputElement>) => {
-    void slugRegistration.onChange(event);
-    setIsSlugCustomized(true);
-  };
-
-  const handleSlugKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      finishSlugEditing();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      cancelSlugEditing();
-    }
-  };
+  const slugValue = form.watch("slug");
 
   const slugError = form.formState.errors.slug?.message;
   const nameError = form.formState.errors.name?.message;
@@ -326,12 +275,10 @@ function BasicInformationStep({
             onChange={(event) => {
               const nextName = event.currentTarget.value;
               void nameRegistration.onChange(event);
-              if (!isSlugCustomized) {
-                form.setValue("slug", slugify(nextName), {
-                  shouldDirty: true,
-                  shouldValidate: form.getFieldState("slug").isTouched,
-                });
-              }
+              form.setValue("slug", slugify(nextName), {
+                shouldDirty: true,
+                shouldValidate: form.getFieldState("slug").isTouched,
+              });
             }}
           />
         )}
@@ -341,87 +288,25 @@ function BasicInformationStep({
         id="game-slug"
         label="Slug"
         required
-        description="Lowercase letters and numbers separated by single hyphens. Slug uniqueness is not checked here."
+        description="Generated from the game name. Slug uniqueness is not checked here."
         error={slugError}
         control={({ describedBy }) => (
-          <div className="flex min-w-0 items-center gap-2">
-            <SkiperInput
-              {...slugRegistration}
-              ref={slugInputRef}
-              id="game-slug"
-              readOnly={!isSlugEditing}
-              aria-readonly={!isSlugEditing}
-              aria-required="true"
-              aria-invalid={Boolean(slugError)}
-              aria-describedby={describedBy}
-              maxLength={100}
-              placeholder="generated-from-game-name"
-              className={cn(controlClassName, "font-mono")}
-              wrapperClassName={cn(
-                controlWrapperClassName,
-                "min-w-0 w-full flex-1",
-                slugError && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
-              )}
-              onChange={handleSlugChange}
-              onKeyDown={handleSlugKeyDown}
-            />
-            <AnimatePresence initial={false} mode="wait">
-              {isSlugEditing ? (
-                <motion.div
-                  key="slug-edit-actions"
-                  initial={{ opacity: 0, x: 4 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -4 }}
-                  transition={{ duration: 0.14 }}
-                  className="flex shrink-0 gap-1"
-                >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-lg"
-                    className="size-11"
-                    aria-label="Finish editing slug"
-                    title="Finish editing"
-                    onClick={finishSlugEditing}
-                  >
-                    <Check aria-hidden="true" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-lg"
-                    className="size-11"
-                    aria-label="Cancel slug edit"
-                    title="Cancel"
-                    onClick={cancelSlugEditing}
-                  >
-                    <X aria-hidden="true" />
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="slug-edit-button"
-                  initial={{ opacity: 0, x: 4 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -4 }}
-                  transition={{ duration: 0.14 }}
-                  className="shrink-0"
-                >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-lg"
-                    className="size-11"
-                    aria-label="Edit slug"
-                    title="Edit slug"
-                    onClick={startSlugEditing}
-                  >
-                    <Pencil aria-hidden="true" />
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <SkiperInput
+            id="game-slug"
+            value={slugValue}
+            readOnly
+            aria-readonly="true"
+            aria-required="true"
+            aria-invalid={Boolean(slugError)}
+            aria-describedby={describedBy}
+            maxLength={100}
+            placeholder="Generated when you enter a game name"
+            className={cn(controlClassName, "font-mono")}
+            wrapperClassName={cn(
+              controlWrapperClassName,
+              slugError && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+            )}
+          />
         )}
       />
 
@@ -735,9 +620,9 @@ function SuccessState() {
       aria-live="polite"
     >
       <CircleCheck aria-hidden="true" className="size-10 text-live" />
-      <h3 className="mt-4 font-display text-2xl font-black">Details validated</h3>
+      <h3 className="mt-4 font-display text-2xl font-black">Ready for your next step</h3>
       <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-        The game details are ready for the next step. No game has been saved.
+        The details passed local validation. No game has been saved.
       </p>
     </motion.div>
   );
@@ -747,8 +632,6 @@ function AddGameWizard({
   form,
   activeStep,
   direction,
-  isSlugCustomized,
-  setIsSlugCustomized,
   isSuccess,
   onBack,
   onContinue,
@@ -760,8 +643,6 @@ function AddGameWizard({
   form: UseFormReturn<AddGameValues>;
   activeStep: number;
   direction: number;
-  isSlugCustomized: boolean;
-  setIsSlugCustomized: (value: boolean) => void;
   isSuccess: boolean;
   onBack: () => void;
   onContinue: () => void;
@@ -812,34 +693,31 @@ function AddGameWizard({
         </div>
       </div>
 
-      <div className="shrink-0 border-y border-border px-5 py-4 sm:px-7">
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm font-medium" aria-live="polite" aria-atomic="true">
-            Step {activeStep + 1} of {steps.length}: {steps[activeStep]}
+      <div className="shrink-0 border-y border-border px-5 py-2 sm:px-7">
+        <div className="flex min-w-0 items-center justify-between gap-4">
+          <p className="min-w-0 truncate text-sm font-medium" aria-live="polite" aria-atomic="true">
+            {steps[activeStep]}
           </p>
-          <span className="font-mono text-xs tabular-nums text-muted-foreground">
-            {String(activeStep + 1).padStart(2, "0")} / {String(steps.length).padStart(2, "0")}
+          <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+            {activeStep + 1} of {steps.length}
           </span>
         </div>
         <div
-          className="mt-3 grid grid-cols-3 gap-1.5"
+          className="mt-1.5 h-0.5 w-full overflow-hidden rounded-full bg-border"
           role="progressbar"
           aria-label="Form progress"
-          aria-valuemin={1}
-          aria-valuemax={steps.length}
-          aria-valuenow={activeStep + 1}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(((activeStep + 1) / steps.length) * 100)}
           aria-valuetext={`Step ${activeStep + 1} of ${steps.length}: ${steps[activeStep]}`}
         >
-          {steps.map((step, index) => (
-            <span
-              key={step}
-              aria-hidden="true"
-              className={cn(
-                "h-1 rounded-full transition-colors",
-                index <= activeStep ? "bg-primary" : "bg-border",
-              )}
-            />
-          ))}
+          <motion.div
+            className="h-full w-full rounded-full bg-primary"
+            initial={false}
+            animate={{ scaleX: (activeStep + 1) / steps.length }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }}
+            style={{ transformOrigin: "left" }}
+          />
         </div>
       </div>
 
@@ -880,14 +758,10 @@ function AddGameWizard({
                             x: prefersReducedMotion ? 0 : direction * -12,
                           }}
                           transition={transition}
-                          className="min-h-full w-full min-w-0"
+                          className="min-h-full w-full min-w-0 p-1"
                         >
                           {index === 0 && (
-                            <BasicInformationStep
-                              form={form}
-                              isSlugCustomized={isSlugCustomized}
-                              setIsSlugCustomized={setIsSlugCustomized}
-                            />
+                            <BasicInformationStep form={form} />
                           )}
                           {index === 1 && <GameArtworkStep form={form} />}
                           {index === 2 && <PublishingSettingsStep form={form} />}
@@ -901,7 +775,7 @@ function AddGameWizard({
           </div>
 
           <Separator />
-          <footer className="flex min-w-0 shrink-0 items-center justify-between gap-3 px-5 py-4 sm:px-7">
+          <footer className="flex min-w-0 shrink-0 items-center justify-between gap-3 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-4">
             <Button
               type="button"
               variant="outline"
@@ -934,7 +808,7 @@ function AddGameWizard({
       {isSuccess && (
         <>
           <Separator />
-          <footer className="flex shrink-0 justify-end px-5 py-4 sm:px-7">
+          <footer className="flex shrink-0 justify-end px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-4">
             <Button type="button" onClick={onClose} className="h-11 min-w-28">
               Done
               <Check aria-hidden="true" data-icon="inline-end" />
@@ -956,7 +830,6 @@ export function AddGameForm({
   const isMobile = useIsMobile();
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [isSlugCustomized, setIsSlugCustomized] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const submissionStarted = useRef(false);
   const form = useForm<AddGameValues>({
@@ -971,7 +844,6 @@ export function AddGameForm({
     form.reset(defaultValues);
     setActiveStep(0);
     setDirection(1);
-    setIsSlugCustomized(false);
     setIsSuccess(false);
     submissionStarted.current = false;
   };
@@ -1035,8 +907,6 @@ export function AddGameForm({
     form,
     activeStep,
     direction,
-    isSlugCustomized,
-    setIsSlugCustomized,
     isSuccess,
     onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
     onContinue: () => void handleContinue(),
@@ -1077,7 +947,7 @@ export function AddGameForm({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="h-[min(90dvh,52rem)] max-h-[90dvh] gap-0 overflow-hidden rounded-t-xl border-border bg-popover p-0 text-popover-foreground"
+          className="h-[min(92dvh,52rem)] max-h-[92dvh] gap-0 overflow-hidden rounded-t-xl border-border bg-popover p-0 text-popover-foreground"
         >
           <SheetClose
             aria-label="Close add game form"
