@@ -4,7 +4,6 @@ import Image from "next/image";
 import {
   useEffect,
   useEffectEvent,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -21,8 +20,6 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
-  CircleCheck,
   ImageOff,
   Plus,
   X,
@@ -58,7 +55,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input as SkiperInput } from "@/components/ui/skiper-ui/skiper106";
+import { SmoothInput } from "@/components/ui/skiper-ui/skiper106";
 import {
   Select,
   SelectContent,
@@ -102,7 +99,7 @@ const stepFields = [
 const controlWrapperClassName =
   "w-full min-w-0 max-w-full rounded-md border border-input bg-background p-0 transition-colors focus-within:border-ring focus-within:outline-none focus-within:ring-3 focus-within:ring-ring/40";
 const controlClassName =
-  "h-10 w-full min-w-0 max-w-full px-3 text-sm text-foreground caret-primary placeholder:text-muted-foreground read-only:cursor-default read-only:bg-muted";
+  "h-10 w-full min-w-0 max-w-full px-3 text-sm text-foreground placeholder:text-muted-foreground";
 
 type FieldControlIds = {
   describedBy?: string;
@@ -214,10 +211,11 @@ function TextInputField({
       description={description}
       error={error}
       control={({ describedBy }) => (
-        <SkiperInput
+        <SmoothInput
           {...registration}
           id={id}
-          type={type}
+          type={type === "url" ? "text" : type}
+          inputMode={type === "url" ? "url" : undefined}
           required={required}
           aria-required={required || undefined}
           aria-invalid={Boolean(error)}
@@ -258,19 +256,23 @@ function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) 
         required
         error={nameError}
         control={({ describedBy }) => (
-          <SkiperInput
+          <SmoothInput
             {...nameRegistration}
             id="game-name"
             required
             aria-required="true"
-            aria-invalid={Boolean(nameError)}
-            aria-describedby={describedBy}
+            aria-invalid={Boolean(nameError || slugError)}
+            aria-describedby={
+              [describedBy, "game-slug", slugError ? "game-slug-error" : undefined]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
             maxLength={120}
             placeholder="e.g. Free Fire MAX"
             className={controlClassName}
             wrapperClassName={cn(
               controlWrapperClassName,
-              nameError && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+              (nameError || slugError) && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
             )}
             onChange={(event) => {
               const nextName = event.currentTarget.value;
@@ -282,32 +284,26 @@ function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) 
             }}
           />
         )}
-      />
-
-      <FieldFrame
-        id="game-slug"
-        label="Slug"
-        required
-        description="Generated from the game name. Slug uniqueness is not checked here."
-        error={slugError}
-        control={({ describedBy }) => (
-          <SkiperInput
-            id="game-slug"
-            value={slugValue}
-            readOnly
-            aria-readonly="true"
-            aria-required="true"
-            aria-invalid={Boolean(slugError)}
-            aria-describedby={describedBy}
-            maxLength={100}
-            placeholder="Generated when you enter a game name"
-            className={cn(controlClassName, "font-mono")}
-            wrapperClassName={cn(
-              controlWrapperClassName,
-              slugError && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
-            )}
-          />
-        )}
+        afterControl={
+          <div className="grid gap-1">
+            <p id="game-slug" className="font-mono text-xs text-muted-foreground">
+              Slug: {slugValue || "—"}
+            </p>
+            <AnimatePresence initial={false}>
+              {slugError && (
+                <motion.div
+                  key={slugError}
+                  initial={{ opacity: 0, y: 2 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -2 }}
+                  transition={{ duration: 0.14 }}
+                >
+                  <FieldError id="game-slug-error">{slugError}</FieldError>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        }
       />
 
       <TextInputField
@@ -462,10 +458,11 @@ function ArtworkUrlField({
       description={description}
       error={error}
       control={({ describedBy }) => (
-        <SkiperInput
+        <SmoothInput
           {...form.register(name)}
           id={name}
-          type="url"
+          type="text"
+          inputMode="url"
           required
           aria-required="true"
           aria-invalid={Boolean(error)}
@@ -526,7 +523,13 @@ function GameArtworkStep({ form }: { form: UseFormReturn<AddGameValues> }) {
   );
 }
 
-function PublishingSettingsStep({ form }: { form: UseFormReturn<AddGameValues> }) {
+function PublishingSettingsStep({
+  form,
+  portalContainer,
+}: {
+  form: UseFormReturn<AddGameValues>;
+  portalContainer: HTMLElement | null;
+}) {
   const statusError = form.formState.errors.status?.message;
 
   return (
@@ -560,7 +563,7 @@ function PublishingSettingsStep({ form }: { form: UseFormReturn<AddGameValues> }
                 >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent align="start">
+                <SelectContent align="start" container={portalContainer}>
                   <SelectGroup>
                     {GAME_STATUSES.map((status) => (
                       <SelectItem key={status.value} value={status.value}>
@@ -608,34 +611,12 @@ function PublishingSettingsStep({ form }: { form: UseFormReturn<AddGameValues> }
   );
 }
 
-function SuccessState() {
-  return (
-    <motion.div
-      key="success-state"
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="flex min-h-full flex-col items-center justify-center px-6 py-10 text-center"
-      role="status"
-      aria-live="polite"
-    >
-      <CircleCheck aria-hidden="true" className="size-10 text-live" />
-      <h3 className="mt-4 font-display text-2xl font-black">Ready for your next step</h3>
-      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-        The details passed local validation. No game has been saved.
-      </p>
-    </motion.div>
-  );
-}
-
 function AddGameWizard({
   form,
   activeStep,
   direction,
-  isSuccess,
   onBack,
   onContinue,
-  onClose,
   onSubmit,
   title,
   description,
@@ -643,15 +624,14 @@ function AddGameWizard({
   form: UseFormReturn<AddGameValues>;
   activeStep: number;
   direction: number;
-  isSuccess: boolean;
   onBack: () => void;
   onContinue: () => void;
-  onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   title: ReactNode;
   description: ReactNode;
 }) {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [portalContainer, setPortalContainer] = useState<HTMLFormElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const alignToCurrentStep = useEffectEvent((api: CarouselApi) => {
     api?.scrollTo(activeStep, Boolean(prefersReducedMotion));
@@ -680,6 +660,7 @@ function AddGameWizard({
 
   return (
     <form
+      ref={setPortalContainer}
       noValidate
       onSubmit={onSubmit}
       className="flex h-full min-h-0 flex-col"
@@ -721,101 +702,81 @@ function AddGameWizard({
         </div>
       </div>
 
-      {isSuccess ? (
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <SuccessState />
-        </div>
-      ) : (
-        <>
-          <div className="min-h-0 flex-1 overflow-hidden px-5 py-5 sm:px-7 sm:py-6">
-            <Carousel
-              setApi={setCarouselApi}
-              opts={{ loop: false, watchDrag: false }}
-              onKeyDownCapture={handleCarouselKeyDown}
-              aria-label="Add game form steps"
-              className="h-full min-h-0"
-            >
-              <CarouselContent className="h-full">
-                {steps.map((step, index) => (
-                  <CarouselItem
-                    key={step}
-                    aria-label={step}
-                    aria-hidden={activeStep !== index}
-                    inert={activeStep !== index}
-                    className="h-full min-w-0 overflow-y-auto overscroll-contain"
-                  >
-                    <AnimatePresence initial={false} mode="wait">
-                      {activeStep === index && (
-                        <motion.div
-                          key={step}
-                          initial={{
-                            opacity: 0,
-                            x: prefersReducedMotion ? 0 : direction * 12,
-                          }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{
-                            opacity: 0,
-                            x: prefersReducedMotion ? 0 : direction * -12,
-                          }}
-                          transition={transition}
-                          className="min-h-full w-full min-w-0 p-1"
-                        >
-                          {index === 0 && (
-                            <BasicInformationStep form={form} />
-                          )}
-                          {index === 1 && <GameArtworkStep form={form} />}
-                          {index === 2 && <PublishingSettingsStep form={form} />}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          </div>
-
-          <Separator />
-          <footer className="flex min-w-0 shrink-0 items-center justify-between gap-3 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-4">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={activeStep === 0}
-              onClick={onBack}
-              className="h-11 min-w-0 flex-shrink-0"
-            >
-              <ArrowLeft aria-hidden="true" data-icon="inline-start" />
-              Back
-            </Button>
-            {activeStep < steps.length - 1 ? (
-              <Button
-                type="button"
-                onClick={onContinue}
-                className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none"
+      <div className="min-h-0 flex-1 overflow-hidden px-5 py-5 sm:px-7 sm:py-6">
+        <Carousel
+          setApi={setCarouselApi}
+          opts={{ loop: false, watchDrag: false }}
+          onKeyDownCapture={handleCarouselKeyDown}
+          aria-label="Add game form steps"
+          className="h-full min-h-0"
+        >
+          <CarouselContent className="h-full">
+            {steps.map((step, index) => (
+              <CarouselItem
+                key={step}
+                aria-label={step}
+                aria-hidden={activeStep !== index}
+                inert={activeStep !== index}
+                className="h-full min-w-0 overflow-y-auto overscroll-contain"
               >
-                Continue
-                <ArrowRight aria-hidden="true" data-icon="inline-end" />
-              </Button>
-            ) : (
-              <Button type="submit" className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none">
-                Add game
-                <Plus aria-hidden="true" data-icon="inline-end" />
-              </Button>
-            )}
-          </footer>
-        </>
-      )}
+                <AnimatePresence initial={false} mode="wait">
+                  {activeStep === index && (
+                    <motion.div
+                      key={step}
+                      initial={{
+                        opacity: 0,
+                        x: prefersReducedMotion ? 0 : direction * 12,
+                      }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{
+                        opacity: 0,
+                        x: prefersReducedMotion ? 0 : direction * -12,
+                      }}
+                      transition={transition}
+                      className="min-h-full w-full min-w-0 p-1"
+                    >
+                      {index === 0 && <BasicInformationStep form={form} />}
+                      {index === 1 && <GameArtworkStep form={form} />}
+                      {index === 2 && (
+                        <PublishingSettingsStep form={form} portalContainer={portalContainer} />
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      </div>
 
-      {isSuccess && (
-        <>
-          <Separator />
-          <footer className="flex shrink-0 justify-end px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-4">
-            <Button type="button" onClick={onClose} className="h-11 min-w-28">
-              Done
-              <Check aria-hidden="true" data-icon="inline-end" />
-            </Button>
-          </footer>
-        </>
-      )}
+      <Separator />
+      <footer className="flex min-w-0 shrink-0 items-center justify-between gap-3 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-4">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={activeStep === 0}
+          onClick={onBack}
+          className="h-11 min-w-0 flex-shrink-0"
+        >
+          <ArrowLeft aria-hidden="true" data-icon="inline-start" />
+          Back
+        </Button>
+        {activeStep < steps.length - 1 ? (
+          <Button
+            type="button"
+            onClick={onContinue}
+            className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none"
+          >
+            Continue
+            <ArrowRight aria-hidden="true" data-icon="inline-end" />
+          </Button>
+        ) : (
+          <Button type="submit" className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none">
+            Add game
+            <Plus aria-hidden="true" data-icon="inline-end" />
+          </Button>
+        )}
+      </footer>
     </form>
   );
 }
@@ -830,8 +791,6 @@ export function AddGameForm({
   const isMobile = useIsMobile();
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const submissionStarted = useRef(false);
   const form = useForm<AddGameValues>({
     resolver: zodResolver(addGameSchema),
     defaultValues,
@@ -844,8 +803,6 @@ export function AddGameForm({
     form.reset(defaultValues);
     setActiveStep(0);
     setDirection(1);
-    setIsSuccess(false);
-    submissionStarted.current = false;
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -890,9 +847,7 @@ export function AddGameForm({
   };
 
   const handleValidSubmit = () => {
-    if (submissionStarted.current) return;
-    submissionStarted.current = true;
-    setIsSuccess(true);
+    // Frontend-only form: keep the user in the wizard after valid validation.
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -907,10 +862,8 @@ export function AddGameForm({
     form,
     activeStep,
     direction,
-    isSuccess,
     onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
     onContinue: () => void handleContinue(),
-    onClose: () => handleOpenChange(false),
     onSubmit: handleFormSubmit,
   };
 
