@@ -1,12 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import {
-  useEffect,
-  useEffectEvent,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -17,10 +12,12 @@ import {
   type UseFormReturn,
   useForm,
 } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
   ImageOff,
+  Loader2,
   Plus,
   X,
 } from "lucide-react";
@@ -41,8 +38,7 @@ import {
 } from "@/components/animate-ui/components/radix/sheet";
 import { Switch } from "@/components/animate-ui/components/headless/switch";
 import { Button } from "@/components/ui/button";
-import {
-  Carousel,
+import { Carousel,
   CarouselContent,
   CarouselItem,
   type CarouselApi,
@@ -68,12 +64,15 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { useTRPC } from "@/app/trpc/client";
+import { TRPCError } from "@trpc/server";
 import {
   addGameSchema,
   GAME_STATUSES,
   isHttpUrl,
   type AddGameValues,
 } from "@/app/modules/games/schemas";
+import { toast } from "sonner";
 
 const defaultValues: AddGameValues = {
   name: "",
@@ -191,6 +190,7 @@ type TextInputFieldProps = {
   required?: boolean;
   type?: "text" | "url";
   maxLength?: number;
+  placeholder?: string;
 };
 
 function TextInputField({
@@ -202,6 +202,7 @@ function TextInputField({
   required,
   type = "text",
   maxLength,
+  placeholder,
 }: TextInputFieldProps) {
   return (
     <FieldFrame
@@ -221,6 +222,7 @@ function TextInputField({
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
           maxLength={maxLength}
+          placeholder={placeholder}
           className={controlClassName}
           wrapperClassName={cn(
             controlWrapperClassName,
@@ -314,6 +316,7 @@ function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) 
         error={form.formState.errors.short_name?.message}
         maxLength={40}
         description="A compact name used where space is limited."
+        placeholder="e.g. FF MAX"
       />
 
       <FieldFrame
@@ -345,6 +348,7 @@ function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) 
           registration={form.register("developer")}
           error={form.formState.errors.developer?.message}
           maxLength={120}
+          placeholder="e.g. ZQGame Ltd."
         />
         <TextInputField
           id="game-publisher"
@@ -352,6 +356,7 @@ function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) 
           registration={form.register("publisher")}
           error={form.formState.errors.publisher?.message}
           maxLength={120}
+          placeholder="e.g. Miniclip"
         />
       </div>
     </FieldGroup>
@@ -618,6 +623,7 @@ function AddGameWizard({
   onBack,
   onContinue,
   onSubmit,
+  isPending,
   title,
   description,
 }: {
@@ -627,6 +633,7 @@ function AddGameWizard({
   onBack: () => void;
   onContinue: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  isPending: boolean;
   title: ReactNode;
   description: ReactNode;
 }) {
@@ -771,9 +778,22 @@ function AddGameWizard({
             <ArrowRight aria-hidden="true" data-icon="inline-end" />
           </Button>
         ) : (
-          <Button type="submit" className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none">
-            Add game
-            <Plus aria-hidden="true" data-icon="inline-end" />
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" data-icon="inline-start" />
+                Adding game...
+              </>
+            ) : (
+              <>
+                Add game
+                <Plus aria-hidden="true" data-icon="inline-end" />
+              </>
+            )}
           </Button>
         )}
       </footer>
@@ -789,6 +809,8 @@ export function AddGameForm({
   onOpenChange: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const form = useForm<AddGameValues>({
@@ -798,6 +820,44 @@ export function AddGameForm({
     reValidateMode: "onChange",
     shouldUnregister: false,
   });
+
+  const createMutation = useMutation(
+    trpc.games.create.mutationOptions({
+      onSuccess: () => {
+        toast.success("Game added", {
+          description: "Game has been added to the catalog.",
+        });
+        resetForm();
+        queryClient.invalidateQueries({ queryKey: ["games", "list"] });
+      },
+      onError: (error) => {
+        if (error instanceof TRPCError) {
+          if (error.code === "CONFLICT") {
+            toast.error("Duplicate slug", {
+              description: "A game with this slug already exists.",
+            });
+            requestAnimationFrame(() => form.setFocus("slug"));
+          } else if (error.code === "UNAUTHORIZED") {
+            toast.error("Unauthorized", {
+              description: "You must be an admin to add games.",
+            });
+          } else if (error.code === "FORBIDDEN") {
+            toast.error("Forbidden", {
+              description: "You don't have permission to add games.",
+            });
+          } else {
+            toast.error("Failed to add game", {
+              description: error.message ?? "An unknown error occurred.",
+            });
+          }
+        } else {
+          toast.error("Failed to add game", {
+            description: "Network error or unexpected failure.",
+          });
+        }
+      },
+    }),
+  );
 
   const resetForm = () => {
     form.reset(defaultValues);
@@ -847,7 +907,19 @@ export function AddGameForm({
   };
 
   const handleValidSubmit = () => {
-    // Frontend-only form: keep the user in the wizard after valid validation.
+    createMutation.mutate({
+      name: form.getValues("name"),
+      slug: form.getValues("slug"),
+      short_name: form.getValues("short_name") || null,
+      description: form.getValues("description") || null,
+      developer: form.getValues("developer") || null,
+      publisher: form.getValues("publisher") || null,
+      icon_url: form.getValues("icon_url") || null,
+      logo_url: form.getValues("logo_url") || null,
+      banner_url: form.getValues("banner_url") || null,
+      status: form.getValues("status"),
+      is_featured: form.getValues("is_featured"),
+    });
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -865,6 +937,7 @@ export function AddGameForm({
     onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
     onContinue: () => void handleContinue(),
     onSubmit: handleFormSubmit,
+    isPending: createMutation.isPending,
   };
 
   return (

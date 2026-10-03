@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/app/modules/theme/ui/components/theme-provider"
 import { AppShell } from "@/app/app-shell";
 import { RouteTransition } from "@/components/route-transition";
 import { Providers } from "./providers";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const displayFont = Archivo({
@@ -41,7 +42,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
             <AppShell>
-              <RouteTransition>{children}</RouteTransition>
+              <RouteTransition>
+                <Toaster />
+                {children}
+              </RouteTransition>
             </AppShell>
           </ThemeProvider>
         </Providers>
