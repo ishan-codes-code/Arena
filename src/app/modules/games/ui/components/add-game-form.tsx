@@ -65,7 +65,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/app/trpc/client";
-import { TRPCError } from "@trpc/server";
 import {
   addGameSchema,
   GAME_STATUSES,
@@ -279,6 +278,7 @@ function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) 
             onChange={(event) => {
               const nextName = event.currentTarget.value;
               void nameRegistration.onChange(event);
+              form.clearErrors("slug");
               form.setValue("slug", slugify(nextName), {
                 shouldDirty: true,
                 shouldValidate: form.getFieldState("slug").isTouched,
@@ -623,6 +623,8 @@ function AddGameWizard({
   onBack,
   onContinue,
   onSubmit,
+  onAddGame,
+  submissionError,
   isPending,
   title,
   description,
@@ -633,6 +635,8 @@ function AddGameWizard({
   onBack: () => void;
   onContinue: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onAddGame: () => void;
+  submissionError?: string;
   isPending: boolean;
   title: ReactNode;
   description: ReactNode;
@@ -709,6 +713,12 @@ function AddGameWizard({
         </div>
       </div>
 
+      {submissionError && (
+        <div className="px-5 pt-4 sm:px-7">
+          <FieldError>{submissionError}</FieldError>
+        </div>
+      )}
+
       <div className="min-h-0 flex-1 overflow-hidden px-5 py-5 sm:px-7 sm:py-6">
         <Carousel
           setApi={setCarouselApi}
@@ -779,8 +789,9 @@ function AddGameWizard({
           </Button>
         ) : (
           <Button
-            type="submit"
+            type="button"
             disabled={isPending}
+            onClick={onAddGame}
             className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none"
           >
             {isPending ? (
@@ -813,6 +824,7 @@ export function AddGameForm({
   const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [submissionError, setSubmissionError] = useState<string>();
   const form = useForm<AddGameValues>({
     resolver: zodResolver(addGameSchema),
     defaultValues,
@@ -827,34 +839,36 @@ export function AddGameForm({
         toast.success("Game added", {
           description: "Game has been added to the catalog.",
         });
-        resetForm();
-        queryClient.invalidateQueries({ queryKey: ["games", "list"] });
+        handleOpenChange(false);
+        void queryClient.invalidateQueries({
+          queryKey: trpc.games.list.queryKey(),
+        });
       },
       onError: (error) => {
-        if (error instanceof TRPCError) {
-          if (error.code === "CONFLICT") {
-            toast.error("Duplicate slug", {
-              description: "A game with this slug already exists.",
-            });
-            requestAnimationFrame(() => form.setFocus("slug"));
-          } else if (error.code === "UNAUTHORIZED") {
-            toast.error("Unauthorized", {
-              description: "You must be an admin to add games.",
-            });
-          } else if (error.code === "FORBIDDEN") {
-            toast.error("Forbidden", {
-              description: "You don't have permission to add games.",
-            });
-          } else {
-            toast.error("Failed to add game", {
-              description: error.message ?? "An unknown error occurred.",
-            });
-          }
-        } else {
-          toast.error("Failed to add game", {
-            description: "Network error or unexpected failure.",
-          });
+        if (error.data?.code === "CONFLICT") {
+          const message = "A game with this slug already exists.";
+          form.setError("slug", { type: "server", message });
+          navigateToStep(0);
+          requestAnimationFrame(() => form.setFocus("name"));
+          toast.error("Duplicate slug", { description: message });
+          return;
         }
+
+        const message =
+          error.data?.code === "UNAUTHORIZED"
+            ? "You must be an admin to add games."
+            : error.data?.code === "FORBIDDEN"
+              ? "You don't have permission to add games."
+              : error.message || "Network error or unexpected failure.";
+        const title =
+          error.data?.code === "UNAUTHORIZED"
+            ? "Unauthorized"
+            : error.data?.code === "FORBIDDEN"
+              ? "Forbidden"
+              : "Failed to add game";
+
+        setSubmissionError(message);
+        toast.error(title, { description: message });
       },
     }),
   );
@@ -863,6 +877,7 @@ export function AddGameForm({
     form.reset(defaultValues);
     setActiveStep(0);
     setDirection(1);
+    setSubmissionError(undefined);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -882,7 +897,7 @@ export function AddGameForm({
 
     if (!isValid) {
       if (activeStep === 0 && form.getFieldState("slug").invalid) {
-        requestAnimationFrame(() => form.setFocus("slug"));
+        requestAnimationFrame(() => form.setFocus("name"));
       }
       return;
     }
@@ -926,17 +941,23 @@ export function AddGameForm({
     event.preventDefault();
     if (activeStep < steps.length - 1) {
       void handleContinue();
-      return;
     }
-    void form.handleSubmit(handleValidSubmit, handleInvalid)(event);
   };
+
+  const handleAddGame = () => {
+    setSubmissionError(undefined);
+    void form.handleSubmit(handleValidSubmit, handleInvalid)();
+  };
+
   const wizardProps = {
     form,
     activeStep,
     direction,
     onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
     onContinue: () => void handleContinue(),
+    onAddGame: handleAddGame,
     onSubmit: handleFormSubmit,
+    submissionError,
     isPending: createMutation.isPending,
   };
 

@@ -41,9 +41,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-full flex flex-col">
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+            <Toaster />
             <AppShell>
               <RouteTransition>
-                <Toaster />
                 {children}
               </RouteTransition>
             </AppShell>
