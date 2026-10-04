@@ -1,76 +1,220 @@
 # Arena Architecture
 
-This project uses a feature-sliced module structure within the Next.js App Router.
+## 1. Purpose
 
-## Current Structure
+This document describes Arena's approved target architecture and the
+responsibility boundaries that guide its development. The repository is
+currently being migrated toward this structure; the target layout below does
+not imply that the migration has already happened.
+
+## 2. Core Principles
+
+- Keep one canonical product-module root: `src/modules/`.
+- Put product behavior with the domain that owns it.
+- Keep `src/app` focused on Next.js application composition.
+- Keep `src/lib` focused on technical infrastructure.
+- Treat tRPC as transport, not as the primary home for business logic.
+- Prefer clear ownership and cohesive responsibilities over identical folder
+  structures or speculative abstractions.
+- Preserve existing boundaries unless there is a real ownership, dependency,
+  cohesion, or maintainability problem.
+
+## 3. High-Level Structure
+
+The approved conceptual structure is:
 
 ```text
 src/
-  app/
-    globals.css
-    layout.tsx                    # Root layout and global providers
-    page.tsx                      # Thin route: renders HomeView
-    modules/
-      arena/
-        ui/
-          components/
-            arena-sidebar.tsx     # Feature-owned navigation composition
-          views/
-            home-view.tsx         # Arena landing-page view
-      theme/
-        ui/
-          components/
-            theme-provider.tsx    # next-themes provider wrapper
-            skiper-ui/
-              skiper26.tsx        # Theme toggle and animation controls
-              theme-icon.tsx      # Animated theme icon
-  components/
-    ui/                           # Shared shadcn/base UI primitives only
-      button.tsx
-      card.tsx
-      form.tsx
-      input.tsx
-      label.tsx
-      separator.tsx
-      sheet.tsx
-      sidebar.tsx
-      skeleton.tsx
-      tooltip.tsx
-  hooks/
-    use-mobile.ts                 # Shared responsive viewport hook used by Sidebar
-  lib/
-    utils.ts                      # Shared utilities such as cn
+├── app/          # Next.js routing and application composition
+├── modules/      # Product and domain ownership
+├── components/   # Shared UI and UI-library components
+├── hooks/        # Genuinely cross-domain hooks
+├── lib/          # Technical infrastructure
+├── trpc/         # tRPC transport and infrastructure
+└── proxy.ts
 ```
 
-## Module Rules
+The primary dependency direction is:
 
-- `src/app/` contains route files, layouts, global styles, and route-level wiring only.
-- Route files stay thin. A page imports and renders a top-level view from `modules/<feature>/ui/views/`.
-- Each feature domain gets its own `src/app/modules/<feature>/` folder.
-- Feature-specific components belong in `modules/<feature>/ui/components/`.
-- `src/components/ui/` is reserved for shared shadcn/base UI primitives. Do not place feature-specific UI there.
-- `ArenaSidebar` is composed in `modules/arena/ui/components/`; `components/ui/sidebar.tsx` remains the shared shadcn primitive.
-- Add `schemas.ts` only when the feature has Zod validation.
-- Add `types.ts` only when the feature has shared or inferred types that need a module-level home.
-- Add `server/` only when the feature has server-side data-layer functions.
-- Add feature-scoped hooks under the feature module only when the feature needs them.
-- Add shared hooks under `src/hooks/` only when they are genuinely cross-feature.
-- Do not create `db/`, `trpc/`, `inngest/`, or similar technology folders until the corresponding library and functionality are adopted.
+```text
+src/app
+    ↓
+src/modules
+    ↓
+src/lib
+```
 
-## Current Feature Ownership
+For tRPC-backed operations, the preferred direction is:
 
-### `arena`
+```text
+UI or Server Component
+    ↓
+src/trpc
+    ↓
+module server operation
+    ↓
+src/lib
+```
 
-Owns the landing-page experience and its top-level `HomeView`.
+These diagrams describe responsibility boundaries, not a requirement that
+every request follow exactly the same path.
 
-### `theme`
+## 4. `src/app` — Next.js Application Layer
 
-Owns the theme provider and Skiper UI theme-toggle implementation. This is a cross-cutting UI concern, but it remains a module so the route and shared UI directories stay focused.
+`src/app` owns Next.js routes and application composition, including:
 
-## Shared Boundaries
+- Routes, layouts, loading states, and error boundaries
+- Route-level composition and redirects
+- Route-level authentication checks
+- Next.js providers
+- Genuine HTTP route handlers
 
-- Tailwind remains the styling system.
-- The existing shadcn/base UI primitives remain in `src/components/ui/`.
-- `next-themes` remains the theme implementation.
-- `src/lib/` contains shared utilities and service wrappers, not feature views.
-- No database, API, validation, or background-job layer is currently adopted.
+Small route-specific logic is appropriate here. For example, a route-level
+authentication check followed by a redirect does not need to be moved simply
+to make the route file empty.
+
+## 5. `src/modules` — Product Domains
+
+`src/modules` is the single canonical directory for genuine product/domain
+ownership. The current Arena implementation establishes these domains:
+
+- `auth`
+- `games`
+
+Domain-specific behavior and UI belong with their owning module. Modules may
+have different internal structures: add folders and files when the actual
+domain needs them, not to make every module look alike.
+
+## 6. Routes Are Not Domains
+
+A URL does not, by itself, establish a product domain. Routes such as
+`/tournaments`, `/rankings`, or `/profile` do not automatically justify
+creating `src/modules/tournaments/`, `src/modules/rankings/`, or
+`src/modules/profile/`.
+
+Create a module when the implementation establishes a meaningful, independent
+product/domain responsibility—not merely because a route exists.
+
+## 7. The Legacy `src/app/modules` Structure
+
+The old `src/app/modules` structure is not the canonical module location and
+must eventually disappear. The repository is being migrated toward
+`src/modules`, but this document does not claim that the migration is already
+complete.
+
+Migration is based on responsibility, not a blind directory rename. In
+particular, the old `competition` grouping is not automatically a
+`competition` domain: its code includes responsibilities such as the landing
+experience and application-wide navigation/sidebar behavior. Place those
+responsibilities according to what they actually own.
+
+## 8. `src/components` — Shared UI
+
+Preserve the existing shared component namespaces:
+
+```text
+src/components/
+├── ui/                 # shadcn/ui components
+├── animate-ui/         # Animate UI components
+├── kokonotui/          # KokonutUI components
+├── navbar.tsx          # Arena-owned application-wide shared component
+└── route-transition.tsx # Arena-owned application-wide shared component
+```
+
+Do not merge these folders merely for structural consistency. Domain-specific
+UI belongs in its domain—for example,
+`src/modules/games/ui/components/game-card.tsx`. Put UI in `src/components`
+when it is genuinely shared across domains.
+
+`theme` is a cross-cutting UI/infrastructure concern, not a product domain.
+Do not make it an independent product module just to make the module structure
+symmetrical.
+
+## 9. `src/hooks`
+
+Use `src/hooks` for hooks that are genuinely shared across domains. A
+domain-specific hook belongs with its owning module.
+
+## 10. `src/lib` — Infrastructure
+
+`src/lib` contains technical infrastructure; it must not become a dumping
+ground for product/domain behavior. Database infrastructure belongs under
+`src/lib/db/`, and low-level Supabase infrastructure belongs under
+`src/lib/supabase/`.
+
+Behavior specific to a product domain, even when it uses infrastructure,
+belongs in the owning module.
+
+## 11. `src/trpc` — Application Transport
+
+tRPC is a transport layer. Keep routers focused on exposing operations and
+delegating work to module-owned operations:
+
+```text
+tRPC router → module operation → infrastructure
+```
+
+Routers should not progressively become the primary location for business
+logic.
+
+## 12. `src/app/api` — HTTP Boundaries
+
+`src/app/api` is the Next.js HTTP boundary. Use it for genuine HTTP use cases
+such as webhooks, external callbacks, third-party integrations, and public
+HTTP endpoints.
+
+Do not create duplicate REST/API and tRPC implementations for the same
+internal operation without a concrete reason.
+
+## 13. Responsibility / Dependency Boundaries
+
+Keep transport, domain behavior, and infrastructure responsibilities distinct:
+
+- `src/app` owns Next.js application composition and HTTP boundaries.
+- `src/modules` owns product/domain behavior.
+- `src/trpc` owns tRPC transport.
+- `src/lib` owns technical infrastructure.
+- `src/components` and `src/hooks` hold shared UI and genuinely cross-domain
+  hooks, respectively.
+
+These are ownership guidelines. Follow the responsibility of the code rather
+than forcing every feature through identical layers.
+
+## 14. File Size and Refactoring
+
+File size is not an architectural rule. A large file is a signal to examine,
+not an automatic reason to split it. Refactor when responsibilities are
+unrelated, cohesion is poor, or the code is difficult to reason about. Do not
+impose arbitrary line-count limits.
+
+## 15. Adding a New Domain
+
+Add a module only when real implementation establishes a meaningful
+independent product/domain responsibility. First identify what the code owns
+and how it relates to existing domains. Do not infer a domain from a URL,
+create placeholder modules for hypothetical features, or add a standard set of
+folders merely because another module has them.
+
+When ownership is genuinely unclear, clarify it before introducing a new
+domain boundary.
+
+## 16. Architecture Evolution
+
+Arena is early-stage. Let architecture evolve from real requirements and
+preserve clear existing boundaries. Refactor when there is a genuine ownership,
+dependency, cohesion, or maintainability problem—not simply because another
+subsystem has a different folder structure.
+
+## 17. Architectural Goal
+
+Prefer:
+
+```text
+clear ownership + cohesive responsibilities + a simple growth path
+```
+
+over:
+
+```text
+identical folders + maximum abstraction + hypothetical future architecture
+```
