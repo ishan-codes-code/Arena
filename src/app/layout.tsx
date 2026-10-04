@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
-import { ThemeProvider } from "@/app/modules/theme/ui/components/theme-provider";
+import { ThemeProvider } from "./theme-provider";
 import { AppShell } from "@/app/app-shell";
 import { RouteTransition } from "@/components/route-transition";
 import { Providers } from "./providers";

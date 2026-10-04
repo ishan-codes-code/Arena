@@ -17,6 +17,47 @@ export const GAME_STATUSES = [
   label: string;
 }[];
 
+const optionalText = (max: number) =>
+  z.string().trim().min(1).max(max).nullable().optional();
+
+const optionalUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .url()
+  .refine((value) => {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  })
+  .nullable()
+  .optional();
+
+export const createGameSchema = z.strictObject({
+  name: z.string().trim().min(1).max(120),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  short_name: optionalText(40),
+  description: optionalText(10000),
+  developer: optionalText(120),
+  publisher: optionalText(120),
+  icon_url: optionalUrl,
+  logo_url: optionalUrl,
+  banner_url: optionalUrl,
+  status: z.enum(GAME_STATUS_VALUES).optional(),
+  is_featured: z.boolean().optional(),
+  sort_order: z
+    .number()
+    .int()
+    .min(-2147483648)
+    .max(2147483647)
+    .optional(),
+});
+
 export function isHttpUrl(value: string): boolean {
   const trimmedValue = value.trim();
   if (!/^https?:\/\//i.test(trimmedValue)) return false;

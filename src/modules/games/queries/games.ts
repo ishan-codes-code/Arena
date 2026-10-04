@@ -1,4 +1,4 @@
-import { useTRPC } from "@/app/trpc/client";
+import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 
 // Drizzle's schema types declare timestamps as Date, but the postgres driver

@@ -2,10 +2,9 @@
 
 ## 1. Purpose
 
-This document describes Arena's approved target architecture and the
-responsibility boundaries that guide its development. The repository is
-currently being migrated toward this structure; the target layout below does
-not imply that the migration has already happened.
+This document describes Arena's architecture and the responsibility
+boundaries that guide its development. The source tree has been migrated to
+the canonical module and tRPC locations described below.
 
 ## 2. Core Principles
 
@@ -97,16 +96,14 @@ product/domain responsibility—not merely because a route exists.
 
 ## 7. The Legacy `src/app/modules` Structure
 
-The old `src/app/modules` structure is not the canonical module location and
-must eventually disappear. The repository is being migrated toward
-`src/modules`, but this document does not claim that the migration is already
-complete.
+The legacy `src/app/modules` structure has been removed. Do not reintroduce
+it; `src/modules` is the single canonical module location.
 
-Migration is based on responsibility, not a blind directory rename. In
-particular, the old `competition` grouping is not automatically a
-`competition` domain: its code includes responsibilities such as the landing
-experience and application-wide navigation/sidebar behavior. Place those
-responsibilities according to what they actually own.
+The migration was based on responsibility, not a blind directory rename. The
+old `competition` grouping was not preserved as a product domain: the landing
+experience remains app-level, and application-wide navigation/sidebar
+behavior is shared UI. Theme behavior is likewise cross-cutting rather than a
+product domain.
 
 ## 8. `src/components` — Shared UI
 

@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactNode } from "react"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
-import { TRPCReactProvider } from "@/app/trpc/client"
+import { TRPCReactProvider } from "@/trpc/client"
 
 /**
  * Create a stable QueryClient instance that persists across re-renders

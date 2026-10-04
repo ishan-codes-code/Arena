@@ -1,48 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, type ReactNode } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Controller,
-  type FieldErrors,
-  type FieldPath,
   type UseFormRegisterReturn,
   type UseFormReturn,
-  useForm,
 } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ImageOff,
-  Loader2,
-  Plus,
-  X,
-} from "lucide-react";
+import { ImageOff } from "lucide-react";
 
-import {
-  Dialog,
-  DialogClose,
-  DialogDescription,
-  DialogPanel,
-  DialogTitle,
-} from "@/components/animate-ui/components/headless/dialog";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from "@/components/animate-ui/components/radix/sheet";
 import { Switch } from "@/components/animate-ui/components/headless/switch";
-import { Button } from "@/components/ui/button";
-import { Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
-} from "@/components/ui/carousel";
 import {
   Field,
   FieldContent,
@@ -60,39 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { useTRPC } from "@/app/trpc/client";
 import {
-  addGameSchema,
   GAME_STATUSES,
   isHttpUrl,
   type AddGameValues,
-} from "@/app/modules/games/schemas";
-import { toast } from "sonner";
-
-const defaultValues: AddGameValues = {
-  name: "",
-  slug: "",
-  short_name: "",
-  description: "",
-  developer: "",
-  publisher: "",
-  icon_url: "",
-  logo_url: "",
-  banner_url: "",
-  status: "active",
-  is_featured: false,
-};
-
-const steps = ["Basic information", "Game artwork", "Publishing settings"] as const;
-const stepFields = [
-  ["name", "slug", "short_name", "description", "developer", "publisher"],
-  ["icon_url", "logo_url", "banner_url"],
-  ["status"],
-] as const satisfies readonly (readonly FieldPath<AddGameValues>[])[];
+} from "@/modules/games/schemas";
 
 const controlWrapperClassName =
   "w-full min-w-0 max-w-full rounded-md border border-input bg-background p-0 transition-colors focus-within:border-ring focus-within:outline-none focus-within:ring-3 focus-within:ring-ring/40";
@@ -242,7 +184,7 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) {
+export function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) {
   const nameRegistration = form.register("name");
   const slugValue = form.watch("slug");
 
@@ -500,7 +442,7 @@ function ArtworkUrlField({
   );
 }
 
-function GameArtworkStep({ form }: { form: UseFormReturn<AddGameValues> }) {
+export function GameArtworkStep({ form }: { form: UseFormReturn<AddGameValues> }) {
   return (
     <FieldGroup className="w-full min-w-0 gap-5">
       <ArtworkUrlField
@@ -528,7 +470,7 @@ function GameArtworkStep({ form }: { form: UseFormReturn<AddGameValues> }) {
   );
 }
 
-function PublishingSettingsStep({
+export function PublishingSettingsStep({
   form,
   portalContainer,
 }: {
@@ -616,407 +558,3 @@ function PublishingSettingsStep({
   );
 }
 
-function AddGameWizard({
-  form,
-  activeStep,
-  direction,
-  onBack,
-  onContinue,
-  onSubmit,
-  onAddGame,
-  submissionError,
-  isPending,
-  title,
-  description,
-}: {
-  form: UseFormReturn<AddGameValues>;
-  activeStep: number;
-  direction: number;
-  onBack: () => void;
-  onContinue: () => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  onAddGame: () => void;
-  submissionError?: string;
-  isPending: boolean;
-  title: ReactNode;
-  description: ReactNode;
-}) {
-  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
-  const [portalContainer, setPortalContainer] = useState<HTMLFormElement | null>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const alignToCurrentStep = useEffectEvent((api: CarouselApi) => {
-    api?.scrollTo(activeStep, Boolean(prefersReducedMotion));
-  });
-
-  useEffect(() => {
-    if (carouselApi) alignToCurrentStep(carouselApi);
-  }, [carouselApi, activeStep]);
-
-  const handleCarouselKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      target.closest("input, textarea, [role=combobox], [contenteditable=true]")
-    ) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  const transition = prefersReducedMotion
-    ? { duration: 0 }
-    : { duration: 0.2, ease: "easeOut" as const };
-
-  return (
-    <form
-      ref={setPortalContainer}
-      noValidate
-      onSubmit={onSubmit}
-      className="flex h-full min-h-0 flex-col"
-      aria-label="Add game"
-    >
-      <div className="shrink-0 px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
-        <div className="pr-12">
-          <p className="text-eyebrow">Games / Catalog</p>
-          {title}
-          {description}
-        </div>
-      </div>
-
-      <div className="shrink-0 border-y border-border px-5 py-2 sm:px-7">
-        <div className="flex min-w-0 items-center justify-between gap-4">
-          <p className="min-w-0 truncate text-sm font-medium" aria-live="polite" aria-atomic="true">
-            {steps[activeStep]}
-          </p>
-          <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-            {activeStep + 1} of {steps.length}
-          </span>
-        </div>
-        <div
-          className="mt-1.5 h-0.5 w-full overflow-hidden rounded-full bg-border"
-          role="progressbar"
-          aria-label="Form progress"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(((activeStep + 1) / steps.length) * 100)}
-          aria-valuetext={`Step ${activeStep + 1} of ${steps.length}: ${steps[activeStep]}`}
-        >
-          <motion.div
-            className="h-full w-full rounded-full bg-primary"
-            initial={false}
-            animate={{ scaleX: (activeStep + 1) / steps.length }}
-            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }}
-            style={{ transformOrigin: "left" }}
-          />
-        </div>
-      </div>
-
-      {submissionError && (
-        <div className="px-5 pt-4 sm:px-7">
-          <FieldError>{submissionError}</FieldError>
-        </div>
-      )}
-
-      <div className="min-h-0 flex-1 overflow-hidden px-5 py-5 sm:px-7 sm:py-6">
-        <Carousel
-          setApi={setCarouselApi}
-          opts={{ loop: false, watchDrag: false }}
-          onKeyDownCapture={handleCarouselKeyDown}
-          aria-label="Add game form steps"
-          className="h-full min-h-0"
-        >
-          <CarouselContent className="h-full">
-            {steps.map((step, index) => (
-              <CarouselItem
-                key={step}
-                aria-label={step}
-                aria-hidden={activeStep !== index}
-                inert={activeStep !== index}
-                className="h-full min-w-0 overflow-y-auto overscroll-contain"
-              >
-                <AnimatePresence initial={false} mode="wait">
-                  {activeStep === index && (
-                    <motion.div
-                      key={step}
-                      initial={{
-                        opacity: 0,
-                        x: prefersReducedMotion ? 0 : direction * 12,
-                      }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{
-                        opacity: 0,
-                        x: prefersReducedMotion ? 0 : direction * -12,
-                      }}
-                      transition={transition}
-                      className="min-h-full w-full min-w-0 p-1"
-                    >
-                      {index === 0 && <BasicInformationStep form={form} />}
-                      {index === 1 && <GameArtworkStep form={form} />}
-                      {index === 2 && (
-                        <PublishingSettingsStep form={form} portalContainer={portalContainer} />
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-      </div>
-
-      <Separator />
-      <footer className="flex min-w-0 shrink-0 items-center justify-between gap-3 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-4">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={activeStep === 0}
-          onClick={onBack}
-          className="h-11 min-w-0 flex-shrink-0"
-        >
-          <ArrowLeft aria-hidden="true" data-icon="inline-start" />
-          Back
-        </Button>
-        {activeStep < steps.length - 1 ? (
-          <Button
-            type="button"
-            onClick={onContinue}
-            className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none"
-          >
-            Continue
-            <ArrowRight aria-hidden="true" data-icon="inline-end" />
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            disabled={isPending}
-            onClick={onAddGame}
-            className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" data-icon="inline-start" />
-                Adding game...
-              </>
-            ) : (
-              <>
-                Add game
-                <Plus aria-hidden="true" data-icon="inline-end" />
-              </>
-            )}
-          </Button>
-        )}
-      </footer>
-    </form>
-  );
-}
-
-export function AddGameForm({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const isMobile = useIsMobile();
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  const [activeStep, setActiveStep] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [submissionError, setSubmissionError] = useState<string>();
-  const form = useForm<AddGameValues>({
-    resolver: zodResolver(addGameSchema),
-    defaultValues,
-    mode: "onBlur",
-    reValidateMode: "onChange",
-    shouldUnregister: false,
-  });
-
-  const createMutation = useMutation(
-    trpc.games.create.mutationOptions({
-      onSuccess: () => {
-        toast.success("Game added", {
-          description: "Game has been added to the catalog.",
-        });
-        handleOpenChange(false);
-        void queryClient.invalidateQueries({
-          queryKey: trpc.games.list.queryKey(),
-        });
-      },
-      onError: (error) => {
-        if (error.data?.code === "CONFLICT") {
-          const message = "A game with this slug already exists.";
-          form.setError("slug", { type: "server", message });
-          navigateToStep(0);
-          requestAnimationFrame(() => form.setFocus("name"));
-          toast.error("Duplicate slug", { description: message });
-          return;
-        }
-
-        const message =
-          error.data?.code === "UNAUTHORIZED"
-            ? "You must be an admin to add games."
-            : error.data?.code === "FORBIDDEN"
-              ? "You don't have permission to add games."
-              : error.message || "Network error or unexpected failure.";
-        const title =
-          error.data?.code === "UNAUTHORIZED"
-            ? "Unauthorized"
-            : error.data?.code === "FORBIDDEN"
-              ? "Forbidden"
-              : "Failed to add game";
-
-        setSubmissionError(message);
-        toast.error(title, { description: message });
-      },
-    }),
-  );
-
-  const resetForm = () => {
-    form.reset(defaultValues);
-    setActiveStep(0);
-    setDirection(1);
-    setSubmissionError(undefined);
-  };
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) resetForm();
-    onOpenChange(nextOpen);
-  };
-
-  const navigateToStep = (nextStep: number) => {
-    setDirection(nextStep > activeStep ? 1 : -1);
-    setActiveStep(nextStep);
-  };
-
-  const handleContinue = async () => {
-    const isValid = await form.trigger([...stepFields[activeStep]], {
-      shouldFocus: true,
-    });
-
-    if (!isValid) {
-      if (activeStep === 0 && form.getFieldState("slug").invalid) {
-        requestAnimationFrame(() => form.setFocus("name"));
-      }
-      return;
-    }
-
-    navigateToStep(Math.min(activeStep + 1, steps.length - 1));
-  };
-
-  const handleInvalid = (
-    errors: FieldErrors<AddGameValues>,
-  ) => {
-    const invalidStep = stepFields.findIndex((fields) =>
-      fields.some((fieldName) => Boolean(errors[fieldName])),
-    );
-    const targetStep = invalidStep < 0 ? activeStep : invalidStep;
-    navigateToStep(targetStep);
-    const firstInvalid = stepFields[targetStep]?.find((fieldName) =>
-      Boolean(errors[fieldName]),
-    );
-    if (firstInvalid) {
-      requestAnimationFrame(() => form.setFocus(firstInvalid));
-    }
-  };
-
-  const handleValidSubmit = () => {
-    createMutation.mutate({
-      name: form.getValues("name"),
-      slug: form.getValues("slug"),
-      short_name: form.getValues("short_name") || null,
-      description: form.getValues("description") || null,
-      developer: form.getValues("developer") || null,
-      publisher: form.getValues("publisher") || null,
-      icon_url: form.getValues("icon_url") || null,
-      logo_url: form.getValues("logo_url") || null,
-      banner_url: form.getValues("banner_url") || null,
-      status: form.getValues("status"),
-      is_featured: form.getValues("is_featured"),
-    });
-  };
-
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (activeStep < steps.length - 1) {
-      void handleContinue();
-    }
-  };
-
-  const handleAddGame = () => {
-    setSubmissionError(undefined);
-    void form.handleSubmit(handleValidSubmit, handleInvalid)();
-  };
-
-  const wizardProps = {
-    form,
-    activeStep,
-    direction,
-    onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
-    onContinue: () => void handleContinue(),
-    onAddGame: handleAddGame,
-    onSubmit: handleFormSubmit,
-    submissionError,
-    isPending: createMutation.isPending,
-  };
-
-  return (
-    <>
-      <Dialog open={open && !isMobile} onClose={handleOpenChange}>
-        <DialogPanel
-          showCloseButton={false}
-          className="h-[min(46rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] w-[min(46rem,calc(100vw-2rem))] flex flex-col gap-0 overflow-hidden border-border bg-card p-0 text-card-foreground sm:max-w-none"
-        >
-          <DialogClose
-            aria-label="Close add game form"
-            className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:right-4 sm:top-4"
-          >
-            <X aria-hidden="true" className="size-4" />
-          </DialogClose>
-          <AddGameWizard
-            {...wizardProps}
-            title={
-              <DialogTitle className="mt-1 font-display text-2xl font-black sm:text-3xl">
-                Add game
-              </DialogTitle>
-            }
-            description={
-              <DialogDescription className="mt-1 text-sm leading-6">
-                Add a title to Arena’s game catalog.
-              </DialogDescription>
-            }
-          />
-        </DialogPanel>
-      </Dialog>
-
-      <Sheet open={open && isMobile} onOpenChange={handleOpenChange}>
-        <SheetContent
-          side="bottom"
-          showCloseButton={false}
-          className="h-[min(92dvh,52rem)] max-h-[92dvh] gap-0 overflow-hidden rounded-t-xl border-border bg-popover p-0 text-popover-foreground"
-        >
-          <SheetClose
-            aria-label="Close add game form"
-            className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <X aria-hidden="true" className="size-4" />
-          </SheetClose>
-          <AddGameWizard
-            {...wizardProps}
-            title={
-              <SheetTitle className="mt-1 font-display text-2xl font-black">
-                Add game
-              </SheetTitle>
-            }
-            description={
-              <SheetDescription className="mt-1 text-sm leading-6">
-                Add a title to Arena’s game catalog.
-              </SheetDescription>
-            }
-          />
-        </SheetContent>
-      </Sheet>
-    </>
-  );
-}

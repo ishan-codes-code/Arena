@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Gamepad2, LayoutDashboard, List, LogIn, Trophy, UserRound } from "lucide-react";
 
-import { ThemeToggleButton } from "@/app/modules/theme/ui/components/skiper-ui/skiper26";
+import { ThemeToggleButton } from "@/components/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +17,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
 
 const primaryNavigation = [

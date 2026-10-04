@@ -3,7 +3,7 @@
 import { type ReactNode } from "react";
 import { Gamepad2 } from "lucide-react";
 
-import { useGamesQuery } from "@/app/modules/games/queries/games";
+import { useGamesQuery } from "@/modules/games/queries/games";
 import { FeaturedCarousel } from "../components/featured-carousel";
 import { GameRail } from "../components/game-rail";
 import { ComingSoonCarousel } from "../components/coming-soon-carousel";

@@ -11,9 +11,8 @@ behavior first.
 
 ## 2. One Canonical Module Root
 
-`src/modules/` is the one canonical product-module directory. Do not create or
-reintroduce `src/app/modules/`. The repository is being migrated toward the
-canonical root; do not assume that migration has already completed.
+`src/modules/` is the one canonical product-module directory. The legacy
+`src/app/modules/` path has been removed; do not create or reintroduce it.
 
 ## 3. Routes Are Not Domains
 
