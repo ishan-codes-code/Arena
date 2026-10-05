@@ -58,6 +58,10 @@ export const createGameSchema = z.strictObject({
     .optional(),
 });
 
+export const deleteGameSchema = z.strictObject({
+  id: z.string().uuid(),
+});
+
 export function isHttpUrl(value: string): boolean {
   const trimmedValue = value.trim();
   if (!/^https?:\/\//i.test(trimmedValue)) return false;

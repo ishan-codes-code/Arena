@@ -131,9 +131,9 @@ const columns: ColumnDef<Features, Game>[] = [
   {
     id: "actions",
     header: "Actions",
-    cell: () => (
+    cell: ({ row }) => (
       <div className="flex justify-end">
-        <GameRowActions />
+        <GameRowActions game={row.original} />
       </div>
     ),
   },

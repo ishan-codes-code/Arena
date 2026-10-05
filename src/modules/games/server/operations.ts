@@ -1,14 +1,21 @@
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { z } from "zod";
 
 import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
-import { createGameSchema } from "../schemas";
+import { createGameSchema, deleteGameSchema } from "../schemas";
 
 export class GameSlugConflictError extends Error {
   constructor() {
     super("A game with this slug already exists.");
     this.name = "GameSlugConflictError";
+  }
+}
+
+export class GameNotFoundError extends Error {
+  constructor() {
+    super("The game was not found.");
+    this.name = "GameNotFoundError";
   }
 }
 
@@ -52,4 +59,17 @@ export async function createGame(input: z.infer<typeof createGameSchema>) {
 
     throw error;
   }
+}
+
+export async function deleteGame(input: z.infer<typeof deleteGameSchema>) {
+  const [deletedGame] = await db
+    .delete(games)
+    .where(eq(games.id, input.id))
+    .returning({ id: games.id });
+
+  if (!deletedGame) {
+    throw new GameNotFoundError();
+  }
+
+  return deletedGame;
 }
