@@ -187,7 +187,13 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function BasicInformationStep({ form }: { form: GameForm }) {
+export function BasicInformationStep({
+  form,
+  mode,
+}: {
+  form: GameForm;
+  mode: "create" | "edit";
+}) {
   const nameRegistration = form.register("name");
   const slugValue = form.watch("slug");
 
@@ -207,9 +213,15 @@ export function BasicInformationStep({ form }: { form: GameForm }) {
             id="game-name"
             required
             aria-required="true"
-            aria-invalid={Boolean(nameError || slugError)}
+            aria-invalid={Boolean(
+              nameError || (mode === "create" && slugError),
+            )}
             aria-describedby={
-              [describedBy, "game-slug", slugError ? "game-slug-error" : undefined]
+              [
+                describedBy,
+                mode === "create" ? "game-slug" : undefined,
+                mode === "create" && slugError ? "game-slug-error" : undefined,
+              ]
                 .filter(Boolean)
                 .join(" ") || undefined
             }
@@ -218,40 +230,57 @@ export function BasicInformationStep({ form }: { form: GameForm }) {
             className={controlClassName}
             wrapperClassName={cn(
               controlWrapperClassName,
-              (nameError || slugError) && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+              (nameError || (mode === "create" && slugError)) &&
+                "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
             )}
             onChange={(event) => {
               const nextName = event.currentTarget.value;
               void nameRegistration.onChange(event);
-              form.clearErrors("slug");
-              form.setValue("slug", slugify(nextName), {
-                shouldDirty: true,
-                shouldValidate: form.getFieldState("slug").isTouched,
-              });
+              if (mode === "create") {
+                form.clearErrors("slug");
+                form.setValue("slug", slugify(nextName), {
+                  shouldDirty: true,
+                  shouldValidate: form.getFieldState("slug").isTouched,
+                });
+              }
             }}
           />
         )}
         afterControl={
-          <div className="grid gap-1">
-            <p id="game-slug" className="font-mono text-xs text-muted-foreground">
-              Slug: {slugValue || "—"}
-            </p>
-            <AnimatePresence initial={false}>
-              {slugError && (
-                <motion.div
-                  key={slugError}
-                  initial={{ opacity: 0, y: 2 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -2 }}
-                  transition={{ duration: 0.14 }}
-                >
-                  <FieldError id="game-slug-error">{slugError}</FieldError>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          mode === "create" && (
+            <div className="grid gap-1">
+              <p id="game-slug" className="font-mono text-xs text-muted-foreground">
+                Slug: {slugValue || "—"}
+              </p>
+              <AnimatePresence initial={false}>
+                {slugError && (
+                  <motion.div
+                    key={slugError}
+                    initial={{ opacity: 0, y: 2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -2 }}
+                    transition={{ duration: 0.14 }}
+                  >
+                    <FieldError id="game-slug-error">{slugError}</FieldError>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )
         }
       />
+
+      {mode === "edit" && (
+        <TextInputField
+          id="game-slug"
+          label="Slug"
+          registration={form.register("slug")}
+          error={slugError}
+          required
+          maxLength={100}
+          placeholder="e.g. free-fire-max"
+        />
+      )}
 
       <TextInputField
         id="game-short-name"

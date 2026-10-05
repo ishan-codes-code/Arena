@@ -166,7 +166,9 @@ export function AddGameWizard({
                       transition={transition}
                       className="min-h-full w-full min-w-0 p-1"
                     >
-                      {index === 0 && <BasicInformationStep form={form} />}
+                      {index === 0 && (
+                        <BasicInformationStep form={form} mode={mode} />
+                      )}
                       {index === 1 && <GameArtworkStep form={form} />}
                       {index === 2 && (
                         <PublishingSettingsStep
