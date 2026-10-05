@@ -29,12 +29,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   GAME_STATUSES,
   isHttpUrl,
-  type AddGameValues,
 } from "@/modules/games/schemas";
+import type { GameFormInput, GameFormValues } from "./game-form-schema";
+
+type GameForm = UseFormReturn<GameFormInput, undefined, GameFormValues>;
 
 const controlWrapperClassName =
   "w-full min-w-0 max-w-full rounded-md border border-input bg-background p-0 transition-colors focus-within:border-ring focus-within:outline-none focus-within:ring-3 focus-within:ring-ring/40";
@@ -184,7 +187,7 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function BasicInformationStep({ form }: { form: UseFormReturn<AddGameValues> }) {
+export function BasicInformationStep({ form }: { form: GameForm }) {
   const nameRegistration = form.register("name");
   const slugValue = form.watch("slug");
 
@@ -387,7 +390,7 @@ function ArtworkUrlField({
   description,
   kind,
 }: {
-  form: UseFormReturn<AddGameValues>;
+  form: GameForm;
   name: "icon_url" | "logo_url" | "banner_url";
   label: string;
   description: string;
@@ -442,7 +445,7 @@ function ArtworkUrlField({
   );
 }
 
-export function GameArtworkStep({ form }: { form: UseFormReturn<AddGameValues> }) {
+export function GameArtworkStep({ form }: { form: GameForm }) {
   return (
     <FieldGroup className="w-full min-w-0 gap-5">
       <ArtworkUrlField
@@ -473,11 +476,14 @@ export function GameArtworkStep({ form }: { form: UseFormReturn<AddGameValues> }
 export function PublishingSettingsStep({
   form,
   portalContainer,
+  showSortOrder,
 }: {
-  form: UseFormReturn<AddGameValues>;
+  form: GameForm;
   portalContainer: HTMLElement | null;
+  showSortOrder: boolean;
 }) {
   const statusError = form.formState.errors.status?.message;
+  const sortOrderError = form.formState.errors.sort_order?.message;
 
   return (
     <FieldGroup className="w-full min-w-0 gap-5">
@@ -554,7 +560,29 @@ export function PublishingSettingsStep({
           </Field>
         )}
       />
+
+      {showSortOrder && (
+        <FieldFrame
+          id="game-sort-order"
+          label="Sort order"
+          description="Lower numbers appear first in Arena."
+          error={sortOrderError}
+          control={({ describedBy }) => (
+            <Input
+              {...form.register("sort_order", { valueAsNumber: true })}
+              id="game-sort-order"
+              type="number"
+              step={1}
+              aria-invalid={Boolean(sortOrderError)}
+              aria-describedby={describedBy}
+              className={cn(
+                "h-11 w-full bg-background",
+                sortOrderError && "border-destructive focus-visible:ring-destructive/20",
+              )}
+            />
+          )}
+        />
+      )}
     </FieldGroup>
   );
 }
-

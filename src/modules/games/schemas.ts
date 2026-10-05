@@ -62,6 +62,20 @@ export const deleteGameSchema = z.strictObject({
   id: z.string().uuid(),
 });
 
+export const updateGameSchema = createGameSchema
+  .partial()
+  .extend({
+    id: z.string().uuid(),
+  })
+  .strict()
+  .refine(
+    (input) =>
+      Object.entries(input).some(
+        ([key, value]) => key !== "id" && value !== undefined,
+      ),
+    { message: "At least one game field must be provided." },
+  );
+
 export function isHttpUrl(value: string): boolean {
   const trimmedValue = value.trim();
   if (!/^https?:\/\//i.test(trimmedValue)) return false;

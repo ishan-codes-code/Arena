@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Archive, Ellipsis, LoaderCircle, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { AddGameForm } from "./add-game-form";
 import {
   AlertDialog,
   AlertDialogBackdrop,
@@ -31,9 +32,10 @@ import { useTRPC } from "@/trpc/client";
 export function GameRowActions({
   game,
 }: {
-  game: Pick<Game, "id" | "name">;
+  game: Game;
 }): React.ReactElement {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const deleteMutation = useMutation(
@@ -51,6 +53,38 @@ export function GameRowActions({
         toast.error("Could not delete game", {
           description: error.message || "Please try again.",
         });
+      },
+    }),
+  );
+  const updateMutation = useMutation(
+    trpc.games.update.mutationOptions({
+      onSuccess: async (updatedGame) => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.games.list.queryKey(),
+        });
+        setIsEditFormOpen(false);
+        toast.success("Game updated", {
+          description: `${updatedGame.name} was updated.`,
+        });
+      },
+      onError: (error) => {
+        const message =
+          error.data?.code === "NOT_FOUND"
+            ? "This game is no longer available. Refresh the games list and try again."
+            : error.data?.code === "CONFLICT"
+              ? "That slug is already in use. Choose a different game name."
+              : error.data?.code === "UNAUTHORIZED"
+                ? "You must be an admin to edit games."
+                : error.data?.code === "FORBIDDEN"
+                  ? "You don't have permission to edit games."
+                  : "We couldn't save the game changes. Please try again.";
+        const title =
+          error.data?.code === "NOT_FOUND"
+            ? "Game not found"
+            : error.data?.code === "CONFLICT"
+              ? "Slug already in use"
+              : "Failed to update game";
+        toast.error(title, { description: message });
       },
     }),
   );
@@ -76,7 +110,7 @@ export function GameRowActions({
         />
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIsEditFormOpen(true)}>
               <Pencil aria-hidden="true" />
               Edit
             </DropdownMenuItem>
@@ -151,6 +185,18 @@ export function GameRowActions({
           </AlertDialogPopup>
         </AlertDialogPortal>
       </AlertDialog>
+      {isEditFormOpen && (
+        <AddGameForm
+          mode="edit"
+          game={game}
+          open={isEditFormOpen}
+          onOpenChange={setIsEditFormOpen}
+          isPending={updateMutation.isPending}
+          onEditSubmit={(values) => {
+            if (!updateMutation.isPending) updateMutation.mutate(values);
+          }}
+        />
+      )}
     </>
   );
 }

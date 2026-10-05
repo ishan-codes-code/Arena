@@ -3,15 +3,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type FieldErrors, type FieldPath, useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Game } from "@/modules/games/queries/games";
 import { useState } from "react";
 
 import { useTRPC } from "@/trpc/client";
-import { addGameSchema, type AddGameValues } from "@/modules/games/schemas";
 import { toast } from "sonner";
 import { AddGameFormDialog } from "./add-game-form-dialog";
 import type { AddGameWizardState } from "./add-game-wizard";
+import {
+  type GameFormInput,
+  type GameFormValues,
+  gameFormSchema,
+} from "./game-form-schema";
 
-const defaultValues: AddGameValues = {
+const defaultValues: GameFormInput = {
   name: "",
   slug: "",
   short_name: "",
@@ -23,30 +28,142 @@ const defaultValues: AddGameValues = {
   banner_url: "",
   status: "active",
   is_featured: false,
+  sort_order: 0,
 };
 
 const steps = ["Basic information", "Game artwork", "Publishing settings"] as const;
-const stepFields = [
+const createStepFields = [
   ["name", "slug", "short_name", "description", "developer", "publisher"],
   ["icon_url", "logo_url", "banner_url"],
   ["status"],
-] as const satisfies readonly (readonly FieldPath<AddGameValues>[])[];
+] as const satisfies readonly (readonly FieldPath<GameFormInput>[])[];
+const editStepFields = [
+  ["name", "slug", "short_name", "description", "developer", "publisher"],
+  ["icon_url", "logo_url", "banner_url"],
+  ["status", "sort_order"],
+] as const satisfies readonly (readonly FieldPath<GameFormInput>[])[];
 
-export function AddGameForm({
-  open,
-  onOpenChange,
-}: {
+export type EditGameSubmission = {
+  id: string;
+  name: string;
+  slug: string;
+  short_name: string | null;
+  description: string | null;
+  developer: string | null;
+  publisher: string | null;
+  icon_url: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  status: Game["status"];
+  is_featured: boolean;
+  sort_order: number;
+};
+
+type BaseAddGameFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+};
+
+type CreateGameFormProps = BaseAddGameFormProps & {
+  mode?: "create";
+};
+
+type EditGameFormProps = BaseAddGameFormProps & {
+  mode: "edit";
+  game: Game;
+  isPending?: boolean;
+  onEditSubmit: (values: EditGameSubmission) => void;
+};
+
+export type AddGameFormProps = CreateGameFormProps | EditGameFormProps;
+
+type FormControllerProps = BaseAddGameFormProps &
+  (
+    | { mode: "create" }
+    | {
+        mode: "edit";
+        game: Game;
+        isPending?: boolean;
+        onEditSubmit: (values: EditGameSubmission) => void;
+      }
+  );
+
+function getGameFormValues(game: Game): GameFormInput {
+  return {
+    name: game.name,
+    slug: game.slug,
+    short_name: game.short_name ?? "",
+    description: game.description ?? "",
+    developer: game.developer ?? "",
+    publisher: game.publisher ?? "",
+    icon_url: game.icon_url ?? "",
+    logo_url: game.logo_url ?? "",
+    banner_url: game.banner_url ?? "",
+    status: game.status,
+    is_featured: game.is_featured,
+    sort_order: game.sort_order,
+  };
+}
+
+function toEditSubmission(
+  gameId: string,
+  values: GameFormValues,
+): EditGameSubmission {
+  return {
+    id: gameId,
+    name: values.name,
+    slug: values.slug,
+    short_name: values.short_name || null,
+    description: values.description || null,
+    developer: values.developer || null,
+    publisher: values.publisher || null,
+    icon_url: values.icon_url || null,
+    logo_url: values.logo_url || null,
+    banner_url: values.banner_url || null,
+    status: values.status,
+    is_featured: values.is_featured,
+    sort_order: values.sort_order,
+  };
+}
+
+export function AddGameForm(props: AddGameFormProps) {
+  if (props.mode === "edit") {
+    return (
+      <AddGameFormController
+        key={`edit:${props.game.id}`}
+        mode="edit"
+        game={props.game}
+        isPending={props.isPending}
+        onEditSubmit={props.onEditSubmit}
+        open={props.open}
+        onOpenChange={props.onOpenChange}
+      />
+    );
+  }
+
+  return (
+    <AddGameFormController
+      key="create"
+      mode="create"
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+    />
+  );
+}
+
+function AddGameFormController(props: FormControllerProps) {
+  const { open, onOpenChange } = props;
+  const mode = props.mode;
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [submissionError, setSubmissionError] = useState<string>();
-  const form = useForm<AddGameValues>({
-    resolver: zodResolver(addGameSchema),
-    defaultValues,
+  const initialValues =
+    props.mode === "edit" ? getGameFormValues(props.game) : defaultValues;
+  const form = useForm<GameFormInput, undefined, GameFormValues>({
+    resolver: zodResolver(gameFormSchema),
+    defaultValues: initialValues,
     mode: "onBlur",
     reValidateMode: "onChange",
     shouldUnregister: false,
@@ -93,13 +210,21 @@ export function AddGameForm({
   );
 
   const resetForm = () => {
-    form.reset(defaultValues);
+    form.reset(initialValues);
     setActiveStep(0);
     setDirection(1);
     setSubmissionError(undefined);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
+    if (
+      !nextOpen &&
+      mode === "edit" &&
+      props.mode === "edit" &&
+      props.isPending
+    ) {
+      return;
+    }
     if (!nextOpen) resetForm();
     onOpenChange(nextOpen);
   };
@@ -110,7 +235,8 @@ export function AddGameForm({
   };
 
   const handleContinue = async () => {
-    const isValid = await form.trigger([...stepFields[activeStep]], {
+    const fields = mode === "edit" ? editStepFields : createStepFields;
+    const isValid = await form.trigger([...fields[activeStep]], {
       shouldFocus: true,
     });
 
@@ -124,15 +250,14 @@ export function AddGameForm({
     navigateToStep(Math.min(activeStep + 1, steps.length - 1));
   };
 
-  const handleInvalid = (
-    errors: FieldErrors<AddGameValues>,
-  ) => {
-    const invalidStep = stepFields.findIndex((fields) =>
-      fields.some((fieldName) => Boolean(errors[fieldName])),
+  const handleInvalid = (errors: FieldErrors<GameFormInput>) => {
+    const fields = mode === "edit" ? editStepFields : createStepFields;
+    const invalidStep = fields.findIndex((stepFields) =>
+      stepFields.some((fieldName) => Boolean(errors[fieldName])),
     );
     const targetStep = invalidStep < 0 ? activeStep : invalidStep;
     navigateToStep(targetStep);
-    const firstInvalid = stepFields[targetStep]?.find((fieldName) =>
+    const firstInvalid = fields[targetStep]?.find((fieldName) =>
       Boolean(errors[fieldName]),
     );
     if (firstInvalid) {
@@ -140,7 +265,13 @@ export function AddGameForm({
     }
   };
 
-  const handleValidSubmit = () => {
+  const handleValidSubmit = (values: GameFormValues) => {
+    if (props.mode === "edit") {
+      if (props.isPending) return;
+      props.onEditSubmit(toEditSubmission(props.game.id, values));
+      return;
+    }
+
     createMutation.mutate({
       name: form.getValues("name"),
       slug: form.getValues("slug"),
@@ -164,12 +295,15 @@ export function AddGameForm({
   };
 
   const handleAddGame = () => {
+    if (mode === "create" && createMutation.isPending) return;
+    if (mode === "edit" && props.mode === "edit" && props.isPending) return;
     setSubmissionError(undefined);
     void form.handleSubmit(handleValidSubmit, handleInvalid)();
   };
 
   const wizardProps: AddGameWizardState = {
     form,
+    mode,
     steps,
     activeStep,
     direction,
@@ -178,7 +312,10 @@ export function AddGameForm({
     onAddGame: handleAddGame,
     onSubmit: handleFormSubmit,
     submissionError,
-    isPending: createMutation.isPending,
+    isPending:
+      mode === "create"
+        ? createMutation.isPending
+        : props.mode === "edit" && Boolean(props.isPending),
   };
 
   return (

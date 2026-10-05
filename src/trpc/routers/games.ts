@@ -1,13 +1,18 @@
 import { TRPCError } from "@trpc/server";
 
 import { adminProcedure, baseProcedure, createTRPCRouter } from "../init";
-import { createGameSchema, deleteGameSchema } from "@/modules/games/schemas";
+import {
+  createGameSchema,
+  deleteGameSchema,
+  updateGameSchema,
+} from "@/modules/games/schemas";
 import {
   createGame,
-  GameSlugConflictError,
   GameNotFoundError,
+  GameSlugConflictError,
   deleteGame,
   listGames,
+  updateGame,
 } from "@/modules/games/server/operations";
 
 export const gamesRouter = createTRPCRouter({
@@ -47,6 +52,32 @@ export const gamesRouter = createTRPCRouter({
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to delete game.",
+      });
+    }
+  }),
+
+  update: adminProcedure.input(updateGameSchema).mutation(async ({ input }) => {
+    try {
+      return await updateGame(input);
+    } catch (error) {
+      if (error instanceof GameNotFoundError) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "The game was not found.",
+        });
+      }
+
+      if (error instanceof GameSlugConflictError) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A game with this slug already exists.",
+        });
+      }
+
+      console.error("Failed to update game.");
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to update game.",
       });
     }
   }),

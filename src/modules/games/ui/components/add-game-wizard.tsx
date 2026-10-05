@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/carousel";
 import { FieldError } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
-import type { AddGameValues } from "@/modules/games/schemas";
+import type { GameFormInput, GameFormValues } from "./game-form-schema";
 import {
   BasicInformationStep,
   GameArtworkStep,
@@ -22,7 +22,8 @@ import {
 } from "./add-game-form-fields";
 
 export type AddGameWizardState = {
-  form: UseFormReturn<AddGameValues>;
+  form: UseFormReturn<GameFormInput, undefined, GameFormValues>;
+  mode: "create" | "edit";
   steps: readonly string[];
   activeStep: number;
   direction: number;
@@ -41,6 +42,7 @@ type AddGameWizardProps = AddGameWizardState & {
 
 export function AddGameWizard({
   form,
+  mode,
   steps,
   activeStep,
   direction,
@@ -87,7 +89,7 @@ export function AddGameWizard({
       noValidate
       onSubmit={onSubmit}
       className="flex h-full min-h-0 flex-col"
-      aria-label="Add game"
+      aria-label={mode === "edit" ? "Edit game" : "Add game"}
     >
       <div className="shrink-0 px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
         <div className="pr-12">
@@ -136,7 +138,7 @@ export function AddGameWizard({
           setApi={setCarouselApi}
           opts={{ loop: false, watchDrag: false }}
           onKeyDownCapture={handleCarouselKeyDown}
-          aria-label="Add game form steps"
+          aria-label={mode === "edit" ? "Edit game form steps" : "Add game form steps"}
           className="h-full min-h-0"
         >
           <CarouselContent className="h-full">
@@ -167,7 +169,11 @@ export function AddGameWizard({
                       {index === 0 && <BasicInformationStep form={form} />}
                       {index === 1 && <GameArtworkStep form={form} />}
                       {index === 2 && (
-                        <PublishingSettingsStep form={form} portalContainer={portalContainer} />
+                        <PublishingSettingsStep
+                          form={form}
+                          portalContainer={portalContainer}
+                          showSortOrder={mode === "edit"}
+                        />
                       )}
                     </motion.div>
                   )}
@@ -209,12 +215,12 @@ export function AddGameWizard({
             {isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" data-icon="inline-start" />
-                Adding game...
+                {mode === "edit" ? "Saving changes..." : "Adding game..."}
               </>
             ) : (
               <>
-                Add game
-                <Plus aria-hidden="true" data-icon="inline-end" />
+                {mode === "edit" ? "Save Changes" : "Add game"}
+                {mode === "create" && <Plus aria-hidden="true" data-icon="inline-end" />}
               </>
             )}
           </Button>
