@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 
 import { AddGameAction } from "../components/add-game-action";
+import { GamesTable } from "../components/games-table";
 
 export function ConsoleGamesView() {
   return (
@@ -29,6 +30,13 @@ export function ConsoleGamesView() {
           </div>
           <AddGameAction />
         </header>
+
+        <section className="mt-8">
+          <h2 className="font-display text-3xl font-black tracking-[-0.06em] sm:text-4xl mb-4">
+            All Games
+          </h2>
+          <GamesTable />
+        </section>
       </div>
     </main>
   );
