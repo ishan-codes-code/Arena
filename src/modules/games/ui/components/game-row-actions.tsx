@@ -1,79 +1,44 @@
 "use client";
 
 import * as React from "react";
-
-import { Ellipsis, Pencil, Archive, Trash2 } from "lucide-react";
-
+import { Archive, Ellipsis, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Menubar,
-  MenubarContent,
-  MenubarGroup,
-  MenubarItem,
-  MenubarMenu,
-  MenubarPortal,
-  MenubarSeparator,
-  MenubarTrigger,
-} from "@/components/ui/menubar";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function GameRowActions(): React.ReactElement {
   return (
-    <Menubar>
-      <MenubarMenu>
-        <MenubarTrigger
-          render={
-            <Button variant="ghost" size="icon" className="size-8" aria-label="Actions">
-              <Ellipsis className="size-4" />
-            </Button>
-          }
-        />
-        <MenubarPortal>
-          <MenubarContent side="right" align="start" sideOffset={4}>
-            <MenubarGroup>
-              <MenubarItem
-                nativeButton
-                render={(props) => (
-                  <button
-                    type="button"
-                    {...props}
-                    className="group/item flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none select-none focus:bg-accent focus:text-accent-foreground data-disabled:opacity-50 data-disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
-                  >
-                    <Pencil className="size-4" />
-                    Edit
-                  </button>
-                )}
-              />
-              <MenubarItem
-                nativeButton
-                render={(props) => (
-                  <button
-                    type="button"
-                    {...props}
-                    className="group/item flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none select-none focus:bg-accent focus:text-accent-foreground data-disabled:opacity-50 data-disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
-                  >
-                    <Archive className="size-4" />
-                    Archive
-                  </button>
-                )}
-              />
-            </MenubarGroup>
-            <MenubarSeparator />
-            <MenubarItem
-              nativeButton
-              render={(props) => (
-                <button
-                  type="button"
-                  {...props}
-                  className="group/item flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive outline-none select-none focus:bg-destructive/10 focus:text-destructive data-disabled:opacity-50 data-disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
-                >
-                  <Trash2 className="size-4" />
-                  Delete
-                </button>
-              )}
-            />
-          </MenubarContent>
-        </MenubarPortal>
-      </MenubarMenu>
-    </Menubar>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="icon" aria-label="Game actions">
+            <Ellipsis aria-hidden="true" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end">
+        <DropdownMenuGroup>
+          <DropdownMenuItem>
+            <Pencil aria-hidden="true" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Archive aria-hidden="true" />
+            Archive
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive">
+          <Trash2 aria-hidden="true" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
