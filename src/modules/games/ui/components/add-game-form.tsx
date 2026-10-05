@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { type FieldErrors, type FieldPath, useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Game } from "@/modules/games/queries/games";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
@@ -159,8 +159,12 @@ function AddGameFormController(props: FormControllerProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [submissionError, setSubmissionError] = useState<string>();
-  const initialValues =
-    props.mode === "edit" ? getGameFormValues(props.game) : defaultValues;
+  const gameId = props.mode === "edit" ? props.game.id : undefined;
+  const editedGame = props.mode === "edit" ? props.game : undefined;
+  const initialValues = useMemo(
+    () => (editedGame ? getGameFormValues(editedGame) : defaultValues),
+    [editedGame],
+  );
   const form = useForm<GameFormInput, undefined, GameFormValues>({
     resolver: zodResolver(gameFormSchema),
     defaultValues: initialValues,
@@ -168,6 +172,20 @@ function AddGameFormController(props: FormControllerProps) {
     reValidateMode: "onChange",
     shouldUnregister: false,
   });
+  const previousGameId = useRef<string | undefined>(undefined);
+  const {
+    formState: { isDirty },
+    reset,
+  } = form;
+
+  useEffect(() => {
+    if (mode !== "edit" || !open || !gameId) return;
+
+    if (previousGameId.current !== gameId || !isDirty) {
+      reset(initialValues);
+    }
+    previousGameId.current = gameId;
+  }, [gameId, initialValues, isDirty, mode, open, reset]);
 
   const createMutation = useMutation(
     trpc.games.create.mutationOptions({

@@ -135,6 +135,7 @@ type TextInputFieldProps = {
   type?: "text" | "url";
   maxLength?: number;
   placeholder?: string;
+  value?: string;
 };
 
 function TextInputField({
@@ -147,6 +148,7 @@ function TextInputField({
   type = "text",
   maxLength,
   placeholder,
+  value,
 }: TextInputFieldProps) {
   return (
     <FieldFrame
@@ -159,6 +161,7 @@ function TextInputField({
         <SmoothInput
           {...registration}
           id={id}
+          value={value}
           type={type === "url" ? "text" : type}
           inputMode={type === "url" ? "url" : undefined}
           required={required}
@@ -196,6 +199,7 @@ export function BasicInformationStep({
 }) {
   const nameRegistration = form.register("name");
   const slugValue = form.watch("slug");
+  const nameValue = mode === "edit" ? form.watch("name") : undefined;
 
   const slugError = form.formState.errors.slug?.message;
   const nameError = form.formState.errors.name?.message;
@@ -211,6 +215,7 @@ export function BasicInformationStep({
           <SmoothInput
             {...nameRegistration}
             id="game-name"
+            value={mode === "edit" ? nameValue : undefined}
             required
             aria-required="true"
             aria-invalid={Boolean(
@@ -275,6 +280,7 @@ export function BasicInformationStep({
           id="game-slug"
           label="Slug"
           registration={form.register("slug")}
+          value={form.watch("slug")}
           error={slugError}
           required
           maxLength={100}
@@ -287,6 +293,7 @@ export function BasicInformationStep({
         label="Short name"
         required
         registration={form.register("short_name")}
+        value={mode === "edit" ? form.watch("short_name") : undefined}
         error={form.formState.errors.short_name?.message}
         maxLength={40}
         description="A compact name used where space is limited."
@@ -320,6 +327,7 @@ export function BasicInformationStep({
           id="game-developer"
           label="Developer"
           registration={form.register("developer")}
+          value={mode === "edit" ? form.watch("developer") : undefined}
           error={form.formState.errors.developer?.message}
           maxLength={120}
           placeholder="e.g. ZQGame Ltd."
@@ -328,6 +336,7 @@ export function BasicInformationStep({
           id="game-publisher"
           label="Publisher"
           registration={form.register("publisher")}
+          value={mode === "edit" ? form.watch("publisher") : undefined}
           error={form.formState.errors.publisher?.message}
           maxLength={120}
           placeholder="e.g. Miniclip"
@@ -414,12 +423,14 @@ function ArtworkPreview({
 
 function ArtworkUrlField({
   form,
+  mode,
   name,
   label,
   description,
   kind,
 }: {
   form: GameForm;
+  mode: "create" | "edit";
   name: "icon_url" | "logo_url" | "banner_url";
   label: string;
   description: string;
@@ -440,6 +451,7 @@ function ArtworkUrlField({
         <SmoothInput
           {...form.register(name)}
           id={name}
+          value={mode === "edit" ? value : undefined}
           type="text"
           inputMode="url"
           required
@@ -474,11 +486,18 @@ function ArtworkUrlField({
   );
 }
 
-export function GameArtworkStep({ form }: { form: GameForm }) {
+export function GameArtworkStep({
+  form,
+  mode,
+}: {
+  form: GameForm;
+  mode: "create" | "edit";
+}) {
   return (
     <FieldGroup className="w-full min-w-0 gap-5">
       <ArtworkUrlField
         form={form}
+        mode={mode}
         name="icon_url"
         label="Icon URL"
         description="Square artwork used to identify the game in compact lists."
@@ -486,6 +505,7 @@ export function GameArtworkStep({ form }: { form: GameForm }) {
       />
       <ArtworkUrlField
         form={form}
+        mode={mode}
         name="logo_url"
         label="Logo URL"
         description="A transparent or wide logo for featured placements."
@@ -493,6 +513,7 @@ export function GameArtworkStep({ form }: { form: GameForm }) {
       />
       <ArtworkUrlField
         form={form}
+        mode={mode}
         name="banner_url"
         label="Banner URL"
         description="Wide artwork used on the game’s featured presentation."

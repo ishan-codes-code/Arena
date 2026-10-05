@@ -169,7 +169,9 @@ export function AddGameWizard({
                       {index === 0 && (
                         <BasicInformationStep form={form} mode={mode} />
                       )}
-                      {index === 1 && <GameArtworkStep form={form} />}
+                      {index === 1 && (
+                        <GameArtworkStep form={form} mode={mode} />
+                      )}
                       {index === 2 && (
                         <PublishingSettingsStep
                           form={form}
