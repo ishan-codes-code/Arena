@@ -8,6 +8,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogBackdrop,
+  AlertDialogClose,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogPopup,
+  AlertDialogPortal,
+  AlertDialogTitle,
+} from "@/components/animate-ui/primitives/base/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { AddGameFormDialog } from "./add-game-form-dialog";
 import type { AddGameWizardState } from "./add-game-wizard";
 import {
@@ -159,6 +171,7 @@ function AddGameFormController(props: FormControllerProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [submissionError, setSubmissionError] = useState<string>();
+  const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const gameId = props.mode === "edit" ? props.game.id : undefined;
   const editedGame = props.mode === "edit" ? props.game : undefined;
   const initialValues = useMemo(
@@ -193,7 +206,8 @@ function AddGameFormController(props: FormControllerProps) {
         toast.success("Game added", {
           description: "Game has been added to the catalog.",
         });
-        handleOpenChange(false);
+        resetForm();
+        onOpenChange(false);
         void queryClient.invalidateQueries({
           queryKey: trpc.games.list.queryKey(),
         });
@@ -243,8 +257,25 @@ function AddGameFormController(props: FormControllerProps) {
     ) {
       return;
     }
-    if (!nextOpen) resetForm();
+    if (!nextOpen && mode === "edit") resetForm();
     onOpenChange(nextOpen);
+  };
+
+  const handleCancel = () => {
+    if (mode !== "create") return;
+    if (isDirty) {
+      setIsDiscardDialogOpen(true);
+      return;
+    }
+
+    resetForm();
+    onOpenChange(false);
+  };
+
+  const discardDraft = () => {
+    resetForm();
+    setIsDiscardDialogOpen(false);
+    onOpenChange(false);
   };
 
   const navigateToStep = (nextStep: number) => {
@@ -327,6 +358,7 @@ function AddGameFormController(props: FormControllerProps) {
     direction,
     onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
     onContinue: () => void handleContinue(),
+    onCancel: handleCancel,
     onAddGame: handleAddGame,
     onSubmit: handleFormSubmit,
     submissionError,
@@ -337,10 +369,52 @@ function AddGameFormController(props: FormControllerProps) {
   };
 
   return (
-    <AddGameFormDialog
-      open={open}
-      onOpenChange={handleOpenChange}
-      wizardProps={wizardProps}
-    />
+    <>
+      <AddGameFormDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        wizardProps={wizardProps}
+      />
+      {mode === "create" && (
+        <AlertDialog
+          open={isDiscardDialogOpen}
+          onOpenChange={setIsDiscardDialogOpen}
+        >
+          <AlertDialogPortal>
+            <AlertDialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
+            <AlertDialogPopup className="fixed inset-0 z-50 m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col gap-5 overflow-y-auto border border-border bg-card p-6 text-card-foreground shadow-lg outline-none">
+              <AlertDialogHeader className="flex flex-col gap-2">
+                <AlertDialogTitle className="font-display text-xl font-bold">
+                  Discard this game draft?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-sm leading-6 text-muted-foreground">
+                  Your entered information will be lost.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <AlertDialogClose
+                  render={
+                    <Button type="button" variant="outline">
+                      Keep Editing
+                    </Button>
+                  }
+                />
+                <AlertDialogClose
+                  render={
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={discardDraft}
+                    >
+                      Discard
+                    </Button>
+                  }
+                />
+              </AlertDialogFooter>
+            </AlertDialogPopup>
+          </AlertDialogPortal>
+        </AlertDialog>
+      )}
+    </>
   );
 }

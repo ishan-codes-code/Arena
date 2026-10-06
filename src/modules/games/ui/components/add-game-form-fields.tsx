@@ -199,7 +199,10 @@ export function BasicInformationStep({
 }) {
   const nameRegistration = form.register("name");
   const slugValue = form.watch("slug");
-  const nameValue = mode === "edit" ? form.watch("name") : undefined;
+  const nameValue = form.watch("name");
+  const shortNameValue = form.watch("short_name");
+  const developerValue = form.watch("developer");
+  const publisherValue = form.watch("publisher");
 
   const slugError = form.formState.errors.slug?.message;
   const nameError = form.formState.errors.name?.message;
@@ -215,7 +218,7 @@ export function BasicInformationStep({
           <SmoothInput
             {...nameRegistration}
             id="game-name"
-            value={mode === "edit" ? nameValue : undefined}
+            value={nameValue}
             required
             aria-required="true"
             aria-invalid={Boolean(
@@ -293,7 +296,7 @@ export function BasicInformationStep({
         label="Short name"
         required
         registration={form.register("short_name")}
-        value={mode === "edit" ? form.watch("short_name") : undefined}
+        value={shortNameValue}
         error={form.formState.errors.short_name?.message}
         maxLength={40}
         description="A compact name used where space is limited."
@@ -309,6 +312,7 @@ export function BasicInformationStep({
           <Textarea
             {...form.register("description")}
             id="game-description"
+            value={form.watch("description")}
             aria-invalid={Boolean(form.formState.errors.description)}
             aria-describedby={describedBy}
             maxLength={10000}
@@ -327,7 +331,7 @@ export function BasicInformationStep({
           id="game-developer"
           label="Developer"
           registration={form.register("developer")}
-          value={mode === "edit" ? form.watch("developer") : undefined}
+          value={developerValue}
           error={form.formState.errors.developer?.message}
           maxLength={120}
           placeholder="e.g. ZQGame Ltd."
@@ -336,7 +340,7 @@ export function BasicInformationStep({
           id="game-publisher"
           label="Publisher"
           registration={form.register("publisher")}
-          value={mode === "edit" ? form.watch("publisher") : undefined}
+          value={publisherValue}
           error={form.formState.errors.publisher?.message}
           maxLength={120}
           placeholder="e.g. Miniclip"
@@ -423,14 +427,12 @@ function ArtworkPreview({
 
 function ArtworkUrlField({
   form,
-  mode,
   name,
   label,
   description,
   kind,
 }: {
   form: GameForm;
-  mode: "create" | "edit";
   name: "icon_url" | "logo_url" | "banner_url";
   label: string;
   description: string;
@@ -451,7 +453,7 @@ function ArtworkUrlField({
         <SmoothInput
           {...form.register(name)}
           id={name}
-          value={mode === "edit" ? value : undefined}
+          value={value}
           type="text"
           inputMode="url"
           required
@@ -488,16 +490,13 @@ function ArtworkUrlField({
 
 export function GameArtworkStep({
   form,
-  mode,
 }: {
   form: GameForm;
-  mode: "create" | "edit";
 }) {
   return (
     <FieldGroup className="w-full min-w-0 gap-5">
       <ArtworkUrlField
         form={form}
-        mode={mode}
         name="icon_url"
         label="Icon URL"
         description="Square artwork used to identify the game in compact lists."
@@ -505,7 +504,6 @@ export function GameArtworkStep({
       />
       <ArtworkUrlField
         form={form}
-        mode={mode}
         name="logo_url"
         label="Logo URL"
         description="A transparent or wide logo for featured placements."
@@ -513,7 +511,6 @@ export function GameArtworkStep({
       />
       <ArtworkUrlField
         form={form}
-        mode={mode}
         name="banner_url"
         label="Banner URL"
         description="Wide artwork used on the game’s featured presentation."

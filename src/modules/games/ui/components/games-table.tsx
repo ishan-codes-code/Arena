@@ -11,31 +11,15 @@ import Image from "next/image";
 import { Calendar, Gamepad2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { useGamesQuery, type Game } from "@/modules/games/queries/games";
+import {
+  GameFeaturedCheckbox,
+  GameStatusSelect,
+} from "./game-inline-controls";
 import { GameRowActions } from "./game-row-actions";
 
 const features = tableFeatures({});
 type Features = typeof features;
-
-const statusStyles = {
-  active: {
-    label: "Active",
-    className: "bg-live/10 text-live",
-  },
-  coming_soon: {
-    label: "Coming Soon",
-    className: "bg-pending/10 text-pending",
-  },
-  inactive: {
-    label: "Inactive",
-    className: "bg-structural/10 text-structural",
-  },
-  archived: {
-    label: "Archived",
-    className: "bg-ink/10 text-ink",
-  },
-} satisfies Record<Game["status"], { label: string; className: string }>;
 
 const columns: ColumnDef<Features, Game>[] = [
   {
@@ -74,40 +58,13 @@ const columns: ColumnDef<Features, Game>[] = [
     id: "status",
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => {
-      const { label, className } = statusStyles[row.original.status];
-
-      return (
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            className
-          )}
-        >
-          <span aria-hidden="true" className="me-1.5 block size-1.5 rounded-full bg-current" />
-          {label}
-        </span>
-      );
-    },
+    cell: ({ row }) => <GameStatusSelect game={row.original} />,
   },
   {
     id: "is_featured",
     accessorKey: "is_featured",
     header: "Featured",
-    cell: ({ row }) => {
-      const isFeatured = row.original.is_featured;
-
-      return (
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            isFeatured ? "bg-live/10 text-live" : "bg-ink/10 text-ink"
-          )}
-        >
-          {isFeatured ? "Yes" : "No"}
-        </span>
-      );
-    },
+    cell: ({ row }) => <GameFeaturedCheckbox game={row.original} />,
   },
   {
     id: "updated_at",

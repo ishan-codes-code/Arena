@@ -28,6 +28,7 @@ export type AddGameWizardState = {
   activeStep: number;
   direction: number;
   onBack: () => void;
+  onCancel: () => void;
   onContinue: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onAddGame: () => void;
@@ -47,6 +48,7 @@ export function AddGameWizard({
   activeStep,
   direction,
   onBack,
+  onCancel,
   onContinue,
   onSubmit,
   onAddGame,
@@ -169,9 +171,7 @@ export function AddGameWizard({
                       {index === 0 && (
                         <BasicInformationStep form={form} mode={mode} />
                       )}
-                      {index === 1 && (
-                        <GameArtworkStep form={form} mode={mode} />
-                      )}
+                      {index === 1 && <GameArtworkStep form={form} />}
                       {index === 2 && (
                         <PublishingSettingsStep
                           form={form}
@@ -189,17 +189,30 @@ export function AddGameWizard({
       </div>
 
       <Separator />
-      <footer className="flex min-w-0 shrink-0 items-center justify-between gap-3 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-4">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={activeStep === 0}
-          onClick={onBack}
-          className="h-11 min-w-0 flex-shrink-0"
-        >
-          <ArrowLeft aria-hidden="true" data-icon="inline-start" />
-          Back
-        </Button>
+      <footer className="flex min-w-0 shrink-0 items-center justify-between gap-2 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:gap-3 sm:px-7 sm:pb-4">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={activeStep === 0}
+            onClick={onBack}
+            className="h-11 min-w-0 flex-shrink-0"
+          >
+            <ArrowLeft aria-hidden="true" data-icon="inline-start" />
+            Back
+          </Button>
+          {mode === "create" && (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={isPending}
+              onClick={onCancel}
+              className="h-11 min-w-0 flex-shrink-0 px-2 sm:px-3"
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
         {activeStep < steps.length - 1 ? (
           <Button
             type="button"
