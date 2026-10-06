@@ -71,7 +71,10 @@ export function GamesView() {
   if (isLoading || !data) return GamesSkeleton();
 
   const games = data.games;
-  const featuredGames = games.filter((g) => g.is_featured);
+  const featuredGames = games.filter(
+    (g) =>
+      g.is_featured && (g.status === "active" || g.status === "coming_soon"),
+  );
   const activeGames = games.filter((g) => g.status === "active");
   const comingSoonGames = games.filter((g) => g.status === "coming_soon");
 

@@ -323,17 +323,17 @@ function AddGameFormController(props: FormControllerProps) {
     }
 
     createMutation.mutate({
-      name: form.getValues("name"),
-      slug: form.getValues("slug"),
-      short_name: form.getValues("short_name") || null,
-      description: form.getValues("description") || null,
-      developer: form.getValues("developer") || null,
-      publisher: form.getValues("publisher") || null,
-      icon_url: form.getValues("icon_url") || null,
-      logo_url: form.getValues("logo_url") || null,
-      banner_url: form.getValues("banner_url") || null,
-      status: form.getValues("status"),
-      is_featured: form.getValues("is_featured"),
+      name: values.name,
+      slug: values.slug,
+      short_name: values.short_name || null,
+      description: values.description || null,
+      developer: values.developer || null,
+      publisher: values.publisher || null,
+      icon_url: values.icon_url || null,
+      logo_url: values.logo_url || null,
+      banner_url: values.banner_url || null,
+      status: values.status,
+      is_featured: values.is_featured,
     });
   };
 
