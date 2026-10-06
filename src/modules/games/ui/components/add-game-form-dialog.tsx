@@ -52,6 +52,9 @@ export function AddGameFormDialog({
           </DialogClose>
           <AddGameWizard
             {...wizardProps}
+            onFormElementChange={
+              isMobile ? undefined : wizardProps.onFormElementChange
+            }
             title={
               <DialogTitle className="mt-1 font-display text-2xl font-black sm:text-3xl">
                 {title}
@@ -81,6 +84,9 @@ export function AddGameFormDialog({
           </SheetClose>
           <AddGameWizard
             {...wizardProps}
+            onFormElementChange={
+              isMobile ? wizardProps.onFormElementChange : undefined
+            }
             title={
               <SheetTitle className="mt-1 font-display text-2xl font-black">
                 {title}

@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogBackdrop,
-  AlertDialogClose,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
@@ -172,6 +171,8 @@ function AddGameFormController(props: FormControllerProps) {
   const [direction, setDirection] = useState(1);
   const [submissionError, setSubmissionError] = useState<string>();
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
+  const [discardDialogContainer, setDiscardDialogContainer] =
+    useState<HTMLFormElement | null>(null);
   const gameId = props.mode === "edit" ? props.game.id : undefined;
   const editedGame = props.mode === "edit" ? props.game : undefined;
   const initialValues = useMemo(
@@ -359,6 +360,8 @@ function AddGameFormController(props: FormControllerProps) {
     onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
     onContinue: () => void handleContinue(),
     onCancel: handleCancel,
+    onFormElementChange:
+      mode === "create" ? setDiscardDialogContainer : undefined,
     onAddGame: handleAddGame,
     onSubmit: handleFormSubmit,
     submissionError,
@@ -380,9 +383,9 @@ function AddGameFormController(props: FormControllerProps) {
           open={isDiscardDialogOpen}
           onOpenChange={setIsDiscardDialogOpen}
         >
-          <AlertDialogPortal>
-            <AlertDialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
-            <AlertDialogPopup className="fixed inset-0 z-50 m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col gap-5 overflow-y-auto border border-border bg-card p-6 text-card-foreground shadow-lg outline-none">
+          <AlertDialogPortal container={discardDialogContainer}>
+            <AlertDialogBackdrop className="fixed inset-0 bg-black/50" />
+            <AlertDialogPopup className="fixed inset-0 m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col gap-5 overflow-y-auto border border-border bg-card p-6 text-card-foreground shadow-lg outline-none">
               <AlertDialogHeader className="flex flex-col gap-2">
                 <AlertDialogTitle className="font-display text-xl font-bold">
                   Discard this game draft?
@@ -392,24 +395,20 @@ function AddGameFormController(props: FormControllerProps) {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <AlertDialogClose
-                  render={
-                    <Button type="button" variant="outline">
-                      Keep Editing
-                    </Button>
-                  }
-                />
-                <AlertDialogClose
-                  render={
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={discardDraft}
-                    >
-                      Discard
-                    </Button>
-                  }
-                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDiscardDialogOpen(false)}
+                >
+                  Keep Editing
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={discardDraft}
+                >
+                  Discard
+                </Button>
               </AlertDialogFooter>
             </AlertDialogPopup>
           </AlertDialogPortal>

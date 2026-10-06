@@ -87,21 +87,25 @@ export function GameFeaturedCheckbox({ game }: { game: Game }) {
   const updateMutation = useGameUpdateMutation();
 
   return (
-    <Checkbox
-      aria-label={`Featured game: ${game.name}`}
-      checked={game.is_featured}
-      disabled={updateMutation.isPending}
-      aria-busy={updateMutation.isPending}
-      onCheckedChange={(checked) => {
-        if (typeof checked !== "boolean" || updateMutation.isPending) return;
-        updateMutation.mutate({ id: game.id, is_featured: checked });
-      }}
-      className={cn(
-        "flex size-6 items-center justify-center rounded border border-input bg-background text-primary-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary data-[state=checked]:bg-primary",
-        updateMutation.isPending && "opacity-60",
-      )}
-    >
-      <CheckboxIndicator className="size-3" />
-    </Checkbox>
+    <div className="flex justify-center">
+      <Checkbox
+        aria-label={`Featured game: ${game.name}`}
+        checked={game.is_featured}
+        disabled={updateMutation.isPending}
+        aria-busy={updateMutation.isPending}
+        whileHover={undefined}
+        whileTap={undefined}
+        onCheckedChange={(checked) => {
+          if (typeof checked !== "boolean" || updateMutation.isPending) return;
+          updateMutation.mutate({ id: game.id, is_featured: checked });
+        }}
+        className={cn(
+          "inline-flex size-11 items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          updateMutation.isPending && "opacity-60",
+        )}
+      >
+        <CheckboxIndicator className="size-4 rounded border border-input bg-background text-primary-foreground transition-colors data-[state=checked]:border-primary data-[state=checked]:bg-primary" />
+      </Checkbox>
+    </div>
   );
 }

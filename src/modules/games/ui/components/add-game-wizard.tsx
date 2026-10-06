@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useState,
+  type ReactNode,
+} from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowLeft, ArrowRight, Loader2, Plus } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
@@ -27,6 +33,7 @@ export type AddGameWizardState = {
   steps: readonly string[];
   activeStep: number;
   direction: number;
+  onFormElementChange?: (form: HTMLFormElement | null) => void;
   onBack: () => void;
   onCancel: () => void;
   onContinue: () => void;
@@ -47,6 +54,7 @@ export function AddGameWizard({
   steps,
   activeStep,
   direction,
+  onFormElementChange,
   onBack,
   onCancel,
   onContinue,
@@ -60,6 +68,13 @@ export function AddGameWizard({
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [portalContainer, setPortalContainer] = useState<HTMLFormElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
+  const handleFormElementChange = useCallback(
+    (formElement: HTMLFormElement | null) => {
+      setPortalContainer(formElement);
+      onFormElementChange?.(formElement);
+    },
+    [onFormElementChange],
+  );
   const alignToCurrentStep = useEffectEvent((api: CarouselApi) => {
     api?.scrollTo(activeStep, Boolean(prefersReducedMotion));
   });
@@ -87,7 +102,7 @@ export function AddGameWizard({
 
   return (
     <form
-      ref={setPortalContainer}
+      ref={handleFormElementChange}
       noValidate
       onSubmit={onSubmit}
       className="flex h-full min-h-0 flex-col"
