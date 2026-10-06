@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
 import type { Game } from "../../queries/games";
+import { GAME_STATUSES } from "../../schemas";
+import { ExternalLink } from "@/components/animate-ui/icons/external-link";
 
 type ComingSoonCardProps = {
   game: Game;
@@ -12,35 +14,63 @@ export function ComingSoonCard({ game }: ComingSoonCardProps) {
   const hasBanner = Boolean(game.banner_url);
 
   return (
-    <article
-      className={cn(
-        "group relative flex w-[calc(100vw-2rem)] max-w-[320px] shrink-0 flex-col overflow-hidden border border-border bg-card transition-colors hover:border-border-strong",
-        "sm:w-[360px] lg:w-[400px]"
-      )}
-    >
-      <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+    <article className="group relative flex w-[260px] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-border-strong sm:w-[280px]">
+      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         {hasBanner ? (
           <Image
             src={game.banner_url as string}
-            alt={`${game.name} banner`}
+            alt=""
             fill
-            sizes="(max-width: 768px) 80vw, (max-width: 1200px) 360px, 400px"
-            className="scale-[1.08] object-cover blur-[4px] transition-transform duration-500 ease-out group-hover:scale-[1.12]"
+            sizes="(max-width: 639px) 260px, 280px"
+            className="object-contain blur-[2px]"
           />
         ) : (
-          <div className="size-full bg-muted" />
+          <div className="flex size-full items-center justify-center bg-muted">
+            <span className="font-display text-4xl font-black tracking-[-0.07em] text-muted-foreground/20">
+              {game.name.charAt(0)}
+            </span>
+          </div>
         )}
 
-        <div className="pointer-events-none absolute inset-0 bg-black/20" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <span className="absolute left-3 top-3 rounded-full border border-white/30 bg-black/70 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-white shadow-sm">
+          {
+            GAME_STATUSES.find(
+              (status) => status.value === game.status,
+            )?.label
+          }
+        </span>
+      </div>
 
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 text-center">
-          <p className="font-display text-2xl font-black leading-[0.9] text-white drop-shadow-sm sm:text-3xl">
-            <span className="block">COMING</span>
-            <span className="block">SOON</span>
-          </p>
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <Link
+            href={`/tournaments/${game.slug}`}
+            className="inline-flex min-w-0 items-center gap-1.5 rounded-sm text-foreground outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <h3 className="truncate font-display text-base font-bold leading-tight tracking-[-0.03em]">
+              {game.short_name ?? game.name}
+            </h3>
+            <ExternalLink
+              animateOnHover
+              className="size-3.5 shrink-0 text-muted-foreground"
+            />
+          </Link>
+          {game.logo_url && (
+            <span className="relative mt-0.5 size-7 shrink-0 overflow-hidden rounded-sm bg-muted">
+              <Image
+                src={game.logo_url}
+                alt=""
+                fill
+                sizes="28px"
+                className="object-cover"
+              />
+            </span>
+          )}
         </div>
-
+        <p className="font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground">
+          {game.developer ?? game.publisher ?? "Arena"}
+        </p>
       </div>
     </article>
   );

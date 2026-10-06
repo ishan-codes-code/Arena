@@ -242,7 +242,7 @@ export function AddGameWizard({
             type="button"
             disabled={isPending}
             onClick={onAddGame}
-            className="h-11 min-w-0 flex-1 sm:min-w-32 sm:flex-none"
+            className="h-11 min-w-0 flex-1 px-2 sm:min-w-28 sm:flex-none"
           >
             {isPending ? (
               <>

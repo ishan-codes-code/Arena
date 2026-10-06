@@ -18,6 +18,7 @@ import Link from "next/link";
 import { ExternalLink } from "@/components/animate-ui/icons/external-link";
 
 import type { Game } from "../../queries/games";
+import { GAME_STATUSES } from "../../schemas";
 
 type FeaturedCarouselProps = {
   games: Game[];
@@ -46,10 +47,16 @@ export function FeaturedCarousel({ games }: FeaturedCarouselProps) {
         ))}
       </CarouselContent>
 
-      <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex" />
-      <CarouselNext className="right-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex" />
+      <CarouselPrevious
+        size="icon-lg"
+        className="left-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex"
+      />
+      <CarouselNext
+        size="icon-lg"
+        className="right-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-black/50 text-foreground backdrop-blur-sm hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex"
+      />
 
-      <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-2 sm:bottom-4">
+      <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 sm:bottom-2">
         <SlideIndicators games={games} />
       </div>
     </Carousel>
@@ -83,12 +90,20 @@ function SlideIndicators({ games }: { games: Game[] }) {
           key={index}
           type="button"
           aria-label={`Go to slide ${index + 1}`}
-          className={cn(
-            "h-1 rounded-full transition-all duration-300",
-            index === selectedIndex ? "w-6 bg-primary" : "w-1.5 bg-foreground/40"
-          )}
+          aria-current={index === selectedIndex ? "true" : undefined}
+          className="inline-flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           onClick={() => api?.scrollTo(index)}
-        />
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "h-1.5 rounded-full transition-[width,background-color] duration-300",
+              index === selectedIndex
+                ? "w-6 bg-primary"
+                : "w-1.5 bg-foreground/60",
+            )}
+          />
+        </button>
       ))}
     </>
   );
@@ -123,27 +138,38 @@ function FeaturedSlide({ game }: { game: Game }) {
               <Image src={game.logo_url} alt="" fill sizes="56px" className="object-contain" />
             </div>
           )}
-          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground sm:text-[10px]">
-            Featured · {game.status.replace("_", " ")}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs uppercase tracking-[0.14em] text-foreground/80">
+              Featured
+            </span>
+            {game.status === "coming_soon" && (
+              <span className="rounded-full border border-white/30 bg-black/70 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[0.12em] text-white shadow-sm">
+                {
+                  GAME_STATUSES.find(
+                    (status) => status.value === game.status,
+                  )?.label
+                }
+              </span>
+            )}
+          </div>
         </div>
-        <h2 className="mt-3 max-w-3xl font-display text-3xl font-black leading-[0.9] tracking-[-0.07em] sm:mt-4 sm:text-5xl lg:text-[5rem]">
+        <h2 className="mt-3 max-w-3xl font-display text-3xl font-black leading-tight tracking-[-0.055em] sm:mt-4 sm:text-4xl lg:text-5xl">
           <Link href={`/tournaments/${game.slug}`} className="inline-flex items-center gap-2 text-foreground hover:text-primary transition-colors">
             {game.name}
             <ExternalLink animateOnHover className="size-5 shrink-0 text-muted-foreground align-middle" />
           </Link>
         </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
+        <p className="mt-3 line-clamp-2 max-w-2xl text-sm leading-5 text-muted-foreground sm:mt-4 sm:line-clamp-none sm:text-base sm:leading-7">
           {game.description ?? "Compete in free-entry tournaments on Arena."}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:mt-6 sm:gap-4">
           {game.developer && (
-            <span className="font-mono text-[9px] uppercase tracking-[0.12em] sm:text-[10px]">
+            <span className="font-mono text-xs uppercase tracking-[0.12em]">
               Dev: {game.developer}
             </span>
           )}
           {game.publisher && (
-            <span className="font-mono text-[9px] uppercase tracking-[0.12em] sm:text-[10px]">
+            <span className="font-mono text-xs uppercase tracking-[0.12em]">
               Publisher: {game.publisher}
             </span>
           )}

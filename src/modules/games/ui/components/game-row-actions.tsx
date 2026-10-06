@@ -70,7 +70,7 @@ export function GameRowActions({
           title={`Edit ${game.name}`}
           disabled={updateMutation.isPending}
           onClick={() => setIsEditFormOpen(true)}
-          className="size-11 text-muted-foreground"
+          className="size-11 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
         >
           <Pencil aria-hidden="true" />
         </Button>
@@ -82,7 +82,7 @@ export function GameRowActions({
           title={`Delete ${game.name}`}
           disabled={deleteMutation.isPending}
           onClick={() => setIsDeleteDialogOpen(true)}
-          className="size-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30"
+          className="size-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive/30"
         >
           <Trash2 aria-hidden="true" />
         </Button>

@@ -24,27 +24,36 @@ function GamesError({ message }: { message: string }): ReactNode {
 
 function GamesSkeleton(): ReactNode {
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-10">
-      {/* Featured skeleton */}
-      <div className="mb-8">
-        <Skeleton className="h-4 w-24 mb-6" />
-        <Skeleton className="h-[500px] w-full rounded-lg" />
-      </div>
-
-      {/* All Games rail skeleton */}
-      <Skeleton className="h-8 w-48 mb-6" />
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[320px] w-[280px] shrink-0 rounded-lg" />
-        ))}
-      </div>
-
-      {/* Coming Soon skeleton */}
-      <Skeleton className="h-10 w-64 mt-16 mb-6" />
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-[400px] w-[360px] shrink-0 rounded-lg" />
-        ))}
+    <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 sm:py-12 lg:px-10">
+      <div className="flex flex-col gap-14 sm:gap-16">
+        <div>
+          <Skeleton className="mb-6 h-4 w-24" />
+          <Skeleton className="aspect-[16/9] w-full rounded-lg" />
+        </div>
+        <section>
+          <Skeleton className="mb-5 h-8 w-48 sm:mb-6" />
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div key={index} className="w-[260px] shrink-0 sm:w-[280px]">
+                <Skeleton className="aspect-[16/10] w-full rounded-lg" />
+                <Skeleton className="mt-3 h-4 w-3/4" />
+                <Skeleton className="mt-2 h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
+        </section>
+        <section>
+          <Skeleton className="mb-5 h-8 w-48 sm:mb-6" />
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={index} className="w-[260px] shrink-0 sm:w-[280px]">
+                <Skeleton className="aspect-[16/10] w-full rounded-lg" />
+                <Skeleton className="mt-3 h-4 w-3/4" />
+                <Skeleton className="mt-2 h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -79,35 +88,42 @@ export function GamesView() {
               Featured
             </span>
           </div>
-          <div className="relative w-full aspect-[16/9]">
+          <div className="relative aspect-[16/9] w-full">
             <FeaturedCarousel games={featuredGames} />
           </div>
         </section>
       )}
 
-      <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-10">
-        {hasActive && <GameRail title="ALL GAMES" games={activeGames} href="/games" />}
+      <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 sm:py-12 lg:px-10">
+        <div className="flex flex-col gap-14 sm:gap-16">
+          {hasActive && (
+            <GameRail title="ALL GAMES" games={activeGames} href="/games" />
+          )}
 
-        {hasComingSoon && (
-          <section className="mt-16">
-            <h2 className="font-display text-3xl font-black tracking-[-0.06em] sm:text-4xl mb-6">
-              COMING SOON
-            </h2>
-            <ComingSoonCarousel games={comingSoonGames} />
-          </section>
-        )}
+          {hasComingSoon && (
+            <section aria-labelledby="coming-soon-heading">
+              <h2
+                id="coming-soon-heading"
+                className="mb-5 font-display text-2xl font-black tracking-[-0.05em] sm:mb-6 sm:text-3xl"
+              >
+                COMING SOON
+              </h2>
+              <ComingSoonCarousel games={comingSoonGames} />
+            </section>
+          )}
 
-        {!hasFeatured && !hasActive && !hasComingSoon && (
-          <section className="py-16 text-center">
-            <Gamepad2 className="mx-auto size-12 text-muted-foreground" />
-            <p className="mt-4 font-display text-2xl font-black tracking-[-0.06em]">
-              No games yet
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Check back soon — new titles are arriving.
-            </p>
-          </section>
-        )}
+          {!hasFeatured && !hasActive && !hasComingSoon && (
+            <section className="py-16 text-center">
+              <Gamepad2 className="mx-auto size-12 text-muted-foreground" />
+              <p className="mt-4 font-display text-2xl font-black tracking-[-0.06em]">
+                No games yet
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Check back soon — new titles are arriving.
+              </p>
+            </section>
+          )}
+        </div>
       </div>
     </main>
   );

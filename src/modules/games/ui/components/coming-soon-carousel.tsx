@@ -33,7 +33,7 @@ export function ComingSoonCarousel({ games }: ComingSoonCarouselProps) {
       onMouseEnter={plugin.stop}
       onMouseLeave={plugin.reset}
     >
-      <CarouselContent>
+      <CarouselContent className="-ml-4">
         {games.map((game) => (
           <CarouselItem key={game.id} className="basis-auto pl-4">
             <ComingSoonCard game={game} />
@@ -41,8 +41,14 @@ export function ComingSoonCarousel({ games }: ComingSoonCarouselProps) {
         ))}
       </CarouselContent>
 
-      <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 hidden md:inline-flex" />
-      <CarouselNext className="right-4 top-1/2 -translate-y-1/2 hidden md:inline-flex" />
+      <CarouselPrevious
+        size="icon-lg"
+        className="left-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-background/90 text-foreground shadow-sm backdrop-blur-sm hover:bg-background focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex"
+      />
+      <CarouselNext
+        size="icon-lg"
+        className="right-4 top-1/2 -translate-y-1/2 rounded-full border border-border-strong bg-background/90 text-foreground shadow-sm backdrop-blur-sm hover:bg-background focus-visible:ring-2 focus-visible:ring-ring hidden md:inline-flex"
+      />
     </Carousel>
   );
 }

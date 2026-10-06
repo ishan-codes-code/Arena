@@ -68,7 +68,11 @@ export function GameStatusSelect({ game }: { game: Game }) {
             className="size-1.5 shrink-0 rounded-full bg-current"
           />
         )}
-        <SelectValue />
+        <SelectValue>
+          {(value) =>
+            GAME_STATUSES.find((status) => status.value === value)?.label ?? ""
+          }
+        </SelectValue>
       </SelectTrigger>
       <SelectContent align="start">
         <SelectGroup>

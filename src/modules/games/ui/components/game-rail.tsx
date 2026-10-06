@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { Game } from "../../queries/games";
 import { GameCard } from "./game-card";
@@ -58,14 +59,14 @@ export function GameRail({ title, games, href, ariaLabel }: GameRailProps) {
 
   return (
     <section className="relative" aria-label={ariaLabel ?? title}>
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <h2 className="font-display text-3xl font-black tracking-[-0.06em] sm:text-4xl">
+      <div className="mb-5 flex items-center justify-between gap-4 sm:mb-6">
+        <h2 className="font-display text-2xl font-black tracking-[-0.05em] sm:text-3xl">
           {title}
         </h2>
         {href && (
           <a
             href={href}
-            className="inline-flex items-center gap-1.5 font-body text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-sm font-body text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             View all
           </a>
@@ -102,18 +103,20 @@ export function GameRail({ title, games, href, ariaLabel }: GameRailProps) {
         <button
           type="button"
           aria-label={`Scroll ${title} left`}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 grid size-10 place-items-center rounded-full border border-border-strong bg-background/80 text-foreground backdrop-blur-sm opacity-0 transition-opacity hover:bg-background hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring sm:opacity-100"
+          disabled={!showLeftFade}
+          className="absolute left-2 top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-border bg-background/90 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-0"
           onClick={scrollLeft}
         >
-          ‹
+          <ChevronLeft aria-hidden="true" />
         </button>
         <button
           type="button"
           aria-label={`Scroll ${title} right`}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 grid size-10 place-items-center rounded-full border border-border-strong bg-background/80 text-foreground backdrop-blur-sm opacity-0 transition-opacity hover:bg-background hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring sm:opacity-100"
+          disabled={!showRightFade}
+          className="absolute right-2 top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-border bg-background/90 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-0"
           onClick={scrollRight}
         >
-          ›
+          <ChevronRight aria-hidden="true" />
         </button>
       </div>
     </section>
