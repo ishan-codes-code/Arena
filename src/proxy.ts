@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
+import { eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
+
+import { db } from "@/lib/db";
+import { profiles } from "@/lib/db/schema";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -32,6 +36,29 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = Boolean(data?.claims);
   const pathname = request.nextUrl.pathname;
+  const isConsolePath = pathname === "/console" || pathname.startsWith("/console/");
+
+  if (isConsolePath) {
+    const userId = data?.claims?.sub;
+    if (typeof userId !== "string") {
+      return redirectWithCookies(request, response, "/");
+    }
+
+    try {
+      const [profile] = await db
+        .select({ role: profiles.role })
+        .from(profiles)
+        .where(eq(profiles.user_id, userId))
+        .limit(1);
+
+      if (profile?.role !== "admin") {
+        return redirectWithCookies(request, response, "/");
+      }
+    } catch {
+      console.error("Failed to verify administrator profile.");
+      return redirectWithCookies(request, response, "/");
+    }
+  }
 
   if (pathname === "/dashboard" && !isAuthenticated) {
     return redirectWithCookies(request, response, "/login");
@@ -55,5 +82,5 @@ function redirectWithCookies(request: NextRequest, response: NextResponse, path:
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: ["/console/:path*", "/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

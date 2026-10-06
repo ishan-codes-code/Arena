@@ -10,6 +10,14 @@ Before editing files for a substantial task:
 - Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
 <!-- intent-skills:end -->
 
+## Arena Architecture
+
+Before changing application structure or behavior, read and follow
+[`docs/architecture.md`](docs/architecture.md) and [`docs/rules.md`](docs/rules.md).
+These documents are the canonical source for Arena's architecture and
+development rules. If other instructions conflict with them, follow the
+canonical documents while preserving compatible project-specific guidance.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

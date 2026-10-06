@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ThemeToggleButton } from "@/app/modules/theme/ui/components/skiper-ui/skiper26";
+import { ThemeToggleButton } from "@/components/theme-toggle";
 
 type AuthShellProps = {
   title: string;
