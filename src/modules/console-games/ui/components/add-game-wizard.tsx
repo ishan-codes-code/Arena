@@ -29,7 +29,6 @@ import {
 
 export type AddGameWizardState = {
   form: UseFormReturn<GameFormInput, undefined, GameFormValues>;
-  mode: "create" | "edit";
   steps: readonly string[];
   activeStep: number;
   direction: number;
@@ -50,7 +49,6 @@ type AddGameWizardProps = AddGameWizardState & {
 
 export function AddGameWizard({
   form,
-  mode,
   steps,
   activeStep,
   direction,
@@ -106,7 +104,7 @@ export function AddGameWizard({
       noValidate
       onSubmit={onSubmit}
       className="flex h-full min-h-0 flex-col"
-      aria-label={mode === "edit" ? "Edit game" : "Add game"}
+      aria-label="Add game"
     >
       <div className="shrink-0 px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
         <div className="pr-12">
@@ -155,7 +153,7 @@ export function AddGameWizard({
           setApi={setCarouselApi}
           opts={{ loop: false, watchDrag: false }}
           onKeyDownCapture={handleCarouselKeyDown}
-          aria-label={mode === "edit" ? "Edit game form steps" : "Add game form steps"}
+          aria-label="Add game form steps"
           className="h-full min-h-0"
         >
           <CarouselContent className="h-full">
@@ -184,14 +182,13 @@ export function AddGameWizard({
                       className="min-h-full w-full min-w-0 p-1"
                     >
                       {index === 0 && (
-                        <BasicInformationStep form={form} mode={mode} />
+                        <BasicInformationStep form={form} />
                       )}
                       {index === 1 && <GameArtworkStep form={form} />}
                       {index === 2 && (
                         <PublishingSettingsStep
                           form={form}
                           portalContainer={portalContainer}
-                          showSortOrder={mode === "edit"}
                         />
                       )}
                     </motion.div>
@@ -216,17 +213,15 @@ export function AddGameWizard({
             <ArrowLeft aria-hidden="true" data-icon="inline-start" />
             Back
           </Button>
-          {mode === "create" && (
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={isPending}
-              onClick={onCancel}
-              className="h-11 min-w-0 flex-shrink-0 px-2 sm:px-3"
-            >
-              Cancel
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={isPending}
+            onClick={onCancel}
+            className="h-11 min-w-0 flex-shrink-0 px-2 sm:px-3"
+          >
+            Cancel
+          </Button>
         </div>
         {activeStep < steps.length - 1 ? (
           <Button
@@ -247,12 +242,12 @@ export function AddGameWizard({
             {isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" data-icon="inline-start" />
-                {mode === "edit" ? "Saving changes..." : "Adding game..."}
+                Adding game...
               </>
             ) : (
               <>
-                {mode === "edit" ? "Save Changes" : "Add game"}
-                {mode === "create" && <Plus aria-hidden="true" data-icon="inline-end" />}
+                Add game
+                <Plus aria-hidden="true" data-icon="inline-end" />
               </>
             )}
           </Button>

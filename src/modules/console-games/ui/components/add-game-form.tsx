@@ -3,8 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type FieldErrors, type FieldPath, useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Game } from "@/modules/games/queries/games";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
@@ -43,128 +42,18 @@ const defaultValues: GameFormInput = {
 };
 
 const steps = ["Basic information", "Game artwork", "Publishing settings"] as const;
-const createStepFields = [
+const stepFields = [
   ["name", "slug", "short_name", "description", "developer", "publisher"],
   ["icon_url", "logo_url", "banner_url"],
   ["status"],
 ] as const satisfies readonly (readonly FieldPath<GameFormInput>[])[];
-const editStepFields = [
-  ["name", "slug", "short_name", "description", "developer", "publisher"],
-  ["icon_url", "logo_url", "banner_url"],
-  ["status", "sort_order"],
-] as const satisfies readonly (readonly FieldPath<GameFormInput>[])[];
 
-export type EditGameSubmission = {
-  id: string;
-  name: string;
-  slug: string;
-  short_name: string | null;
-  description: string | null;
-  developer: string | null;
-  publisher: string | null;
-  icon_url: string | null;
-  logo_url: string | null;
-  banner_url: string | null;
-  status: Game["status"];
-  is_featured: boolean;
-  sort_order: number;
-};
-
-type BaseAddGameFormProps = {
+export type AddGameFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-type CreateGameFormProps = BaseAddGameFormProps & {
-  mode?: "create";
-};
-
-type EditGameFormProps = BaseAddGameFormProps & {
-  mode: "edit";
-  game: Game;
-  isPending?: boolean;
-  onEditSubmit: (values: EditGameSubmission) => void;
-};
-
-export type AddGameFormProps = CreateGameFormProps | EditGameFormProps;
-
-type FormControllerProps = BaseAddGameFormProps &
-  (
-    | { mode: "create" }
-    | {
-        mode: "edit";
-        game: Game;
-        isPending?: boolean;
-        onEditSubmit: (values: EditGameSubmission) => void;
-      }
-  );
-
-function getGameFormValues(game: Game): GameFormInput {
-  return {
-    name: game.name,
-    slug: game.slug,
-    short_name: game.short_name ?? "",
-    description: game.description ?? "",
-    developer: game.developer ?? "",
-    publisher: game.publisher ?? "",
-    icon_url: game.icon_url ?? "",
-    logo_url: game.logo_url ?? "",
-    banner_url: game.banner_url ?? "",
-    status: game.status,
-    is_featured: game.is_featured,
-    sort_order: game.sort_order,
-  };
-}
-
-function toEditSubmission(
-  gameId: string,
-  values: GameFormValues,
-): EditGameSubmission {
-  return {
-    id: gameId,
-    name: values.name,
-    slug: values.slug,
-    short_name: values.short_name || null,
-    description: values.description || null,
-    developer: values.developer || null,
-    publisher: values.publisher || null,
-    icon_url: values.icon_url || null,
-    logo_url: values.logo_url || null,
-    banner_url: values.banner_url || null,
-    status: values.status,
-    is_featured: values.is_featured,
-    sort_order: values.sort_order,
-  };
-}
-
-export function AddGameForm(props: AddGameFormProps) {
-  if (props.mode === "edit") {
-    return (
-      <AddGameFormController
-        key={`edit:${props.game.id}`}
-        mode="edit"
-        game={props.game}
-        isPending={props.isPending}
-        onEditSubmit={props.onEditSubmit}
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-      />
-    );
-  }
-
-  return (
-    <AddGameFormController
-      key="create"
-      mode="create"
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    />
-  );
-}
-
-function AddGameFormController(props: FormControllerProps) {
-  const { open, onOpenChange } = props;
-  const mode = props.mode;
+export function AddGameForm({ open, onOpenChange }: AddGameFormProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState(0);
@@ -173,33 +62,18 @@ function AddGameFormController(props: FormControllerProps) {
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const [discardDialogContainer, setDiscardDialogContainer] =
     useState<HTMLFormElement | null>(null);
-  const gameId = props.mode === "edit" ? props.game.id : undefined;
-  const editedGame = props.mode === "edit" ? props.game : undefined;
-  const initialValues = useMemo(
-    () => (editedGame ? getGameFormValues(editedGame) : defaultValues),
-    [editedGame],
-  );
+
   const form = useForm<GameFormInput, undefined, GameFormValues>({
     resolver: zodResolver(gameFormSchema),
-    defaultValues: initialValues,
+    defaultValues,
     mode: "onBlur",
     reValidateMode: "onChange",
     shouldUnregister: false,
   });
-  const previousGameId = useRef<string | undefined>(undefined);
   const {
     formState: { isDirty },
     reset,
   } = form;
-
-  useEffect(() => {
-    if (mode !== "edit" || !open || !gameId) return;
-
-    if (previousGameId.current !== gameId || !isDirty) {
-      reset(initialValues);
-    }
-    previousGameId.current = gameId;
-  }, [gameId, initialValues, isDirty, mode, open, reset]);
 
   const createMutation = useMutation(
     trpc.games.create.mutationOptions({
@@ -243,27 +117,17 @@ function AddGameFormController(props: FormControllerProps) {
   );
 
   const resetForm = () => {
-    form.reset(initialValues);
+    reset(defaultValues);
     setActiveStep(0);
     setDirection(1);
     setSubmissionError(undefined);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (
-      !nextOpen &&
-      mode === "edit" &&
-      props.mode === "edit" &&
-      props.isPending
-    ) {
-      return;
-    }
-    if (!nextOpen && mode === "edit") resetForm();
     onOpenChange(nextOpen);
   };
 
   const handleCancel = () => {
-    if (mode !== "create") return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -285,8 +149,7 @@ function AddGameFormController(props: FormControllerProps) {
   };
 
   const handleContinue = async () => {
-    const fields = mode === "edit" ? editStepFields : createStepFields;
-    const isValid = await form.trigger([...fields[activeStep]], {
+    const isValid = await form.trigger([...stepFields[activeStep]], {
       shouldFocus: true,
     });
 
@@ -301,13 +164,12 @@ function AddGameFormController(props: FormControllerProps) {
   };
 
   const handleInvalid = (errors: FieldErrors<GameFormInput>) => {
-    const fields = mode === "edit" ? editStepFields : createStepFields;
-    const invalidStep = fields.findIndex((stepFields) =>
-      stepFields.some((fieldName) => Boolean(errors[fieldName])),
+    const invalidStep = stepFields.findIndex((fields) =>
+      fields.some((fieldName) => Boolean(errors[fieldName])),
     );
     const targetStep = invalidStep < 0 ? activeStep : invalidStep;
     navigateToStep(targetStep);
-    const firstInvalid = fields[targetStep]?.find((fieldName) =>
+    const firstInvalid = stepFields[targetStep]?.find((fieldName) =>
       Boolean(errors[fieldName]),
     );
     if (firstInvalid) {
@@ -316,12 +178,6 @@ function AddGameFormController(props: FormControllerProps) {
   };
 
   const handleValidSubmit = (values: GameFormValues) => {
-    if (props.mode === "edit") {
-      if (props.isPending) return;
-      props.onEditSubmit(toEditSubmission(props.game.id, values));
-      return;
-    }
-
     createMutation.mutate({
       name: values.name,
       slug: values.slug,
@@ -345,30 +201,24 @@ function AddGameFormController(props: FormControllerProps) {
   };
 
   const handleAddGame = () => {
-    if (mode === "create" && createMutation.isPending) return;
-    if (mode === "edit" && props.mode === "edit" && props.isPending) return;
+    if (createMutation.isPending) return;
     setSubmissionError(undefined);
     void form.handleSubmit(handleValidSubmit, handleInvalid)();
   };
 
   const wizardProps: AddGameWizardState = {
     form,
-    mode,
     steps,
     activeStep,
     direction,
     onBack: () => navigateToStep(Math.max(activeStep - 1, 0)),
     onContinue: () => void handleContinue(),
     onCancel: handleCancel,
-    onFormElementChange:
-      mode === "create" ? setDiscardDialogContainer : undefined,
+    onFormElementChange: setDiscardDialogContainer,
     onAddGame: handleAddGame,
     onSubmit: handleFormSubmit,
     submissionError,
-    isPending:
-      mode === "create"
-        ? createMutation.isPending
-        : props.mode === "edit" && Boolean(props.isPending),
+    isPending: createMutation.isPending,
   };
 
   return (
@@ -378,42 +228,40 @@ function AddGameFormController(props: FormControllerProps) {
         onOpenChange={handleOpenChange}
         wizardProps={wizardProps}
       />
-      {mode === "create" && (
-        <AlertDialog
-          open={isDiscardDialogOpen}
-          onOpenChange={setIsDiscardDialogOpen}
-        >
-          <AlertDialogPortal container={discardDialogContainer}>
-            <AlertDialogBackdrop className="fixed inset-0 bg-black/50" />
-            <AlertDialogPopup className="fixed inset-0 m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col gap-5 overflow-y-auto border border-border bg-card p-6 text-card-foreground shadow-lg outline-none">
-              <AlertDialogHeader className="flex flex-col gap-2">
-                <AlertDialogTitle className="font-display text-xl font-bold">
-                  Discard this game draft?
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-sm leading-6 text-muted-foreground">
-                  Your entered information will be lost.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDiscardDialogOpen(false)}
-                >
-                  Keep Editing
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={discardDraft}
-                >
-                  Discard
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogPopup>
-          </AlertDialogPortal>
-        </AlertDialog>
-      )}
+      <AlertDialog
+        open={isDiscardDialogOpen}
+        onOpenChange={setIsDiscardDialogOpen}
+      >
+        <AlertDialogPortal container={discardDialogContainer}>
+          <AlertDialogBackdrop className="fixed inset-0 bg-black/50" />
+          <AlertDialogPopup className="fixed inset-0 m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col gap-5 overflow-y-auto border border-border bg-card p-6 text-card-foreground shadow-lg outline-none">
+            <AlertDialogHeader className="flex flex-col gap-2">
+              <AlertDialogTitle className="font-display text-xl font-bold">
+                Discard this game draft?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm leading-6 text-muted-foreground">
+                Your entered information will be lost.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDiscardDialogOpen(false)}
+              >
+                Keep Editing
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={discardDraft}
+              >
+                Discard
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogPopup>
+        </AlertDialogPortal>
+      </AlertDialog>
     </>
   );
 }

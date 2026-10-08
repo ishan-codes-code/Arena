@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   GAME_STATUSES,
@@ -192,10 +191,8 @@ function slugify(value: string): string {
 
 export function BasicInformationStep({
   form,
-  mode,
 }: {
   form: GameForm;
-  mode: "create" | "edit";
 }) {
   const nameRegistration = form.register("name");
   const slugValue = form.watch("slug");
@@ -221,14 +218,12 @@ export function BasicInformationStep({
             value={nameValue}
             required
             aria-required="true"
-            aria-invalid={Boolean(
-              nameError || (mode === "create" && slugError),
-            )}
+            aria-invalid={Boolean(nameError || slugError)}
             aria-describedby={
               [
                 describedBy,
-                mode === "create" ? "game-slug" : undefined,
-                mode === "create" && slugError ? "game-slug-error" : undefined,
+                "game-slug",
+                slugError ? "game-slug-error" : undefined,
               ]
                 .filter(Boolean)
                 .join(" ") || undefined
@@ -238,58 +233,41 @@ export function BasicInformationStep({
             className={controlClassName}
             wrapperClassName={cn(
               controlWrapperClassName,
-              (nameError || (mode === "create" && slugError)) &&
+              (nameError || slugError) &&
                 "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
             )}
             onChange={(event) => {
               const nextName = event.currentTarget.value;
               void nameRegistration.onChange(event);
-              if (mode === "create") {
-                form.clearErrors("slug");
-                form.setValue("slug", slugify(nextName), {
-                  shouldDirty: true,
-                  shouldValidate: form.getFieldState("slug").isTouched,
-                });
-              }
+              form.clearErrors("slug");
+              form.setValue("slug", slugify(nextName), {
+                shouldDirty: true,
+                shouldValidate: form.getFieldState("slug").isTouched,
+              });
             }}
           />
         )}
         afterControl={
-          mode === "create" && (
-            <div className="grid gap-1">
-              <p id="game-slug" className="font-mono text-xs text-muted-foreground">
-                Slug: {slugValue || "—"}
-              </p>
-              <AnimatePresence initial={false}>
-                {slugError && (
-                  <motion.div
-                    key={slugError}
-                    initial={{ opacity: 0, y: 2 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -2 }}
-                    transition={{ duration: 0.14 }}
-                  >
-                    <FieldError id="game-slug-error">{slugError}</FieldError>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )
+          <div className="grid gap-1">
+            <p id="game-slug" className="font-mono text-xs text-muted-foreground">
+              Slug: {slugValue || "—"}
+            </p>
+            <AnimatePresence initial={false}>
+              {slugError && (
+                <motion.div
+                  key={slugError}
+                  initial={{ opacity: 0, y: 2 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -2 }}
+                  transition={{ duration: 0.14 }}
+                >
+                  <FieldError id="game-slug-error">{slugError}</FieldError>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         }
       />
-
-      {mode === "edit" && (
-        <TextInputField
-          id="game-slug"
-          label="Slug"
-          registration={form.register("slug")}
-          value={form.watch("slug")}
-          error={slugError}
-          required
-          maxLength={100}
-          placeholder="e.g. free-fire-max"
-        />
-      )}
 
       <TextInputField
         id="game-short-name"
@@ -523,14 +501,11 @@ export function GameArtworkStep({
 export function PublishingSettingsStep({
   form,
   portalContainer,
-  showSortOrder,
 }: {
   form: GameForm;
   portalContainer: HTMLElement | null;
-  showSortOrder: boolean;
 }) {
   const statusError = form.formState.errors.status?.message;
-  const sortOrderError = form.formState.errors.sort_order?.message;
 
   return (
     <FieldGroup className="w-full min-w-0 gap-5">
@@ -607,29 +582,7 @@ export function PublishingSettingsStep({
           </Field>
         )}
       />
-
-      {showSortOrder && (
-        <FieldFrame
-          id="game-sort-order"
-          label="Sort order"
-          description="Lower numbers appear first in Arena."
-          error={sortOrderError}
-          control={({ describedBy }) => (
-            <Input
-              {...form.register("sort_order", { valueAsNumber: true })}
-              id="game-sort-order"
-              type="number"
-              step={1}
-              aria-invalid={Boolean(sortOrderError)}
-              aria-describedby={describedBy}
-              className={cn(
-                "h-11 w-full bg-background",
-                sortOrderError && "border-destructive focus-visible:ring-destructive/20",
-              )}
-            />
-          )}
-        />
-      )}
     </FieldGroup>
   );
 }
+

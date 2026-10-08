@@ -2,14 +2,9 @@
 
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  LoaderCircle,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { LoaderCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
-import { AddGameForm } from "./add-game-form";
 import {
   AlertDialog,
   AlertDialogBackdrop,
@@ -24,7 +19,6 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Game } from "@/modules/games/queries/games";
 import { useTRPC } from "@/trpc/client";
-import { useGameUpdateMutation } from "./game-update-mutation";
 
 export function GameRowActions({
   game,
@@ -32,10 +26,8 @@ export function GameRowActions({
   game: Game;
 }): React.ReactElement {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const updateMutation = useGameUpdateMutation();
   const deleteMutation = useMutation(
     trpc.games.delete.mutationOptions({
       onSuccess: async () => {
@@ -66,23 +58,11 @@ export function GameRowActions({
           type="button"
           variant="ghost"
           size="icon-lg"
-          aria-label={`Edit ${game.name}`}
-          title={`Edit ${game.name}`}
-          disabled={updateMutation.isPending}
-          onClick={() => setIsEditFormOpen(true)}
-          className="size-11 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-        >
-          <Pencil aria-hidden="true" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-lg"
           aria-label={`Delete ${game.name}`}
           title={`Delete ${game.name}`}
           disabled={deleteMutation.isPending}
           onClick={() => setIsDeleteDialogOpen(true)}
-          className="size-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive/30"
+          className="size-11 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive/30"
         >
           <Trash2 aria-hidden="true" />
         </Button>
@@ -143,26 +123,6 @@ export function GameRowActions({
           </AlertDialogPopup>
         </AlertDialogPortal>
       </AlertDialog>
-      {isEditFormOpen && (
-        <AddGameForm
-          mode="edit"
-          game={game}
-          open={isEditFormOpen}
-          onOpenChange={setIsEditFormOpen}
-          isPending={updateMutation.isPending}
-          onEditSubmit={(values) => {
-            if (updateMutation.isPending) return;
-            updateMutation.mutate(values, {
-              onSuccess: (updatedGame) => {
-                setIsEditFormOpen(false);
-                toast.success("Game updated", {
-                  description: `${updatedGame.name} was updated.`,
-                });
-              },
-            });
-          }}
-        />
-      )}
     </>
   );
 }
