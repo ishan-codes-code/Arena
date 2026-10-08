@@ -9,7 +9,6 @@ import {
   Gamepad2,
   ExternalLink,
   Sparkles,
-  Layers,
   Trophy,
   Sliders,
 } from "lucide-react";
@@ -25,6 +24,7 @@ import {
   TabsContent,
 } from "@/components/animate-ui/components/animate/tabs";
 import { GameOverviewTab } from "../components/game-overview-tab";
+import { GameModesTab } from "../components/game-modes-tab";
 import { cn } from "@/lib/utils";
 
 type GameDetailsViewProps = {
@@ -278,22 +278,9 @@ export function GameDetailsView({ slug }: GameDetailsViewProps) {
                 <GameOverviewTab game={game} />
               </TabsContent>
 
-              {/* Tab 2: Modes (Minimal placeholder) */}
+              {/* Tab 2: Modes */}
               <TabsContent value="modes">
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-muted/10 p-12 text-center sm:p-16">
-                  <div className="flex size-12 items-center justify-center rounded-lg border border-border bg-card">
-                    <Layers className="size-6 text-muted-foreground" />
-                  </div>
-                  <h3 className="mt-4 font-display text-xl font-bold tracking-[-0.03em]">
-                    Game Modes
-                  </h3>
-                  <p className="mt-1.5 max-w-md text-sm text-muted-foreground">
-                    Configure competition formats, match types, team structures, and rules for {game.name}.
-                  </p>
-                  <span className="mt-4 inline-block font-mono text-[11px] uppercase tracking-wider text-muted-foreground/75">
-                    Planned feature • Ready for implementation
-                  </span>
-                </div>
+                <GameModesTab game={game} />
               </TabsContent>
 
               {/* Tab 3: Tournaments (Minimal placeholder) */}
