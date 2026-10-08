@@ -121,3 +121,104 @@ export const addGameSchema = z.object({
 });
 
 export type AddGameValues = z.infer<typeof addGameSchema>;
+
+// ---------------------------------------------------------------------------
+// Game Mode schemas
+// ---------------------------------------------------------------------------
+
+const modeSlug = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, "Enter a slug.")
+  .max(100, "Slug must be 100 characters or fewer.")
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Use lowercase letters and numbers separated by single hyphens.",
+  );
+
+export const createModeSchema = z.strictObject({
+  game_id: z.string().uuid(),
+  name: z.string().trim().min(1, "Enter a mode name.").max(120, "Mode name must be 120 characters or fewer."),
+  slug: modeSlug,
+  description: optionalText(10000),
+  max_players_per_match: z
+    .number()
+    .int("Must be a whole number.")
+    .min(1, "Must be at least 1."),
+  active: z.boolean().optional(),
+});
+
+export const updateModeSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().trim().min(1, "Enter a mode name.").max(120, "Mode name must be 120 characters or fewer.").optional(),
+    slug: modeSlug.optional(),
+    description: optionalText(10000),
+    max_players_per_match: z
+      .number()
+      .int("Must be a whole number.")
+      .min(1, "Must be at least 1.")
+      .optional(),
+    active: z.boolean().optional(),
+  })
+  .strict()
+  .refine(
+    (input) =>
+      Object.entries(input).some(
+        ([key, value]) => key !== "id" && value !== undefined,
+      ),
+    { message: "At least one mode field must be provided." },
+  );
+
+export const deleteModeSchema = z.strictObject({
+  id: z.string().uuid(),
+});
+
+export const getModeSchema = z.strictObject({
+  id: z.string().uuid(),
+});
+
+export const listModesSchema = z.strictObject({
+  game_id: z.string().uuid(),
+});
+
+// ---------------------------------------------------------------------------
+// Mode Team Configuration schemas
+// ---------------------------------------------------------------------------
+
+export const createTeamConfigSchema = z.strictObject({
+  mode_id: z.string().uuid(),
+  name: z.string().trim().min(1, "Enter a configuration name.").max(80, "Name must be 80 characters or fewer."),
+  team_size: z
+    .number()
+    .int("Must be a whole number.")
+    .min(1, "Team size must be at least 1."),
+});
+
+export const updateTeamConfigSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().trim().min(1, "Enter a configuration name.").max(80, "Name must be 80 characters or fewer.").optional(),
+    team_size: z
+      .number()
+      .int("Must be a whole number.")
+      .min(1, "Team size must be at least 1.")
+      .optional(),
+  })
+  .strict()
+  .refine(
+    (input) =>
+      Object.entries(input).some(
+        ([key, value]) => key !== "id" && value !== undefined,
+      ),
+    { message: "At least one configuration field must be provided." },
+  );
+
+export const deleteTeamConfigSchema = z.strictObject({
+  id: z.string().uuid(),
+});
+
+export const listTeamConfigsSchema = z.strictObject({
+  mode_id: z.string().uuid(),
+});
