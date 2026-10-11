@@ -3,9 +3,11 @@
 import * as React from "react";
 import {
   AlertCircle,
+  ArrowLeft,
   Layers,
   Plus,
   RotateCcw,
+  Users,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,7 @@ import {
   type GameMode,
 } from "@/modules/games/queries/modes";
 import type { Game } from "@/modules/games/queries/games";
+import { useMediaQuery } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { SelectedModePanel } from "./selected-mode-panel";
 
@@ -39,7 +42,6 @@ function ModeStatusDot({ active }: { active: boolean }) {
 function ModeStatusBadge({ active }: { active: boolean }) {
   return (
     <span
-      aria-label={active ? "Active" : "Inactive"}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium",
         active
@@ -48,8 +50,7 @@ function ModeStatusBadge({ active }: { active: boolean }) {
       )}
     >
       <ModeStatusDot active={active} />
-      <span className="sr-only">{active ? "Active" : "Inactive"}</span>
-      <span aria-hidden="true">{active ? "Active" : "Inactive"}</span>
+      <span>{active ? "Active" : "Inactive"}</span>
     </span>
   );
 }
@@ -74,7 +75,7 @@ function GameModeListItem({
       data-selected={isSelected ? "true" : undefined}
       data-testid={`mode-row-${mode.id}`}
       className={cn(
-        "group relative flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left outline-none transition-colors duration-150",
+        "group relative flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left outline-none transition-colors duration-150 motion-reduce:transition-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
         isSelected
           ? "border-primary/70 bg-primary/[0.04]"
           : "border-transparent bg-card/40 hover:border-border hover:bg-muted/50",
@@ -82,32 +83,23 @@ function GameModeListItem({
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <ModeStatusDot active={mode.active} />
-        <h4
+        <span
           className={cn(
-            "truncate font-display text-sm font-bold tracking-[-0.02em]",
+            "block truncate font-display text-sm font-bold tracking-[-0.02em]",
             isSelected ? "text-primary" : "text-foreground",
           )}
         >
           {mode.name}
-        </h4>
+        </span>
       </div>
 
       <div className="flex items-center gap-2.5">
-        <span className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:inline-flex">
-          <svg
-            aria-hidden="true"
-            className="size-3 shrink-0 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 7v3l3 3"
-            />
-          </svg>
+        <span
+          className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:inline-flex"
+          title={`Maximum ${mode.max_players_per_match} players per match`}
+          aria-label={`${mode.max_players_per_match} max players`}
+        >
+          <Users className="size-3 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span>{mode.max_players_per_match}</span>
         </span>
         <ModeStatusBadge active={mode.active} />
@@ -116,7 +108,7 @@ function GameModeListItem({
       {isSelected && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary"
+          className="pointer-events-none absolute inset-y-0 left-0 w-0.5 rounded-l-lg bg-primary"
         />
       )}
     </motion.button>
@@ -243,25 +235,29 @@ function GameModesErrorState({
   );
 }
 
-/**
- * The master-detail breakpoint. Below this, the workspace uses a two-step
- * master–detail interaction (list → details with back navigation). Above this,
- * the list and details are shown side by side.
- */
-const MASTER_DETAIL_BREAKPOINT = "lg";
-
 export function GameModesTab({ game }: GameModesTabProps) {
   const { data, isLoading, isError, error, refetch } = useGameModesQuery(game.id);
   const modes = data?.modes ?? [];
 
   const [selectedModeId, setSelectedModeId] = React.useState<string | null>(null);
-  // Separate mobile view state from selection state:
-  // 'list' shows the mode list only, 'details' shows the master-detail panel
-  const [mobileView, setMobileView] = React.useState<'list' | 'details'>('list');
+  // Separate mobile view state ('list' | 'details') for single-column viewport flow
+  const [mobileView, setMobileView] = React.useState<"list" | "details">("list");
   const prefersReducedMotion = useReducedMotion() ?? false;
 
-  // Desktop: auto-select first mode when nothing selected.
-  // Mobile: valid selection or first mode fallback for details view.
+  // Responsive layout state: matches Tailwind's lg: breakpoint (1024px)
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  // Reset selectedModeId if the selection is no longer present in available modes
+  if (selectedModeId && !modes.some((m) => m.id === selectedModeId)) {
+    setSelectedModeId(null);
+    if (mobileView === "details") {
+      setMobileView("list");
+    }
+  }
+
+  // Active selected ID:
+  // - If user explicitly selected a valid mode, use it.
+  // - Otherwise, automatically default to the first mode if modes exist.
   const activeSelectedId =
     selectedModeId && modes.some((m) => m.id === selectedModeId)
       ? selectedModeId
@@ -269,23 +265,19 @@ export function GameModesTab({ game }: GameModesTabProps) {
 
   const selectedMode = modes.find((m) => m.id === activeSelectedId) ?? null;
 
-  // Mobile details view: the mode being viewed. Falls back to first mode if selection invalid.
-  const mobileDetailsId =
-    mobileView === 'details' && selectedModeId && modes.some((m) => m.id === selectedModeId)
-      ? selectedModeId
-      : mobileView === 'details' && activeSelectedId
-        ? activeSelectedId
-        : null;
-
-  // Fetch team configs for the mode currently being viewed:
-  // - On desktop: activeSelectedId (always valid when modes exist)
-  // - On mobile details: the mode being viewed
-  // - On mobile list: no fetch (disabled, cache retained)
-  const configModeId = mobileView === 'list' ? null : activeSelectedId;
+  // Derive which mode's configuration panel is actually rendered:
+  // - On desktop: activeSelectedId (details panel is always visible side-by-side)
+  // - On mobile details view: activeSelectedId (details panel is visible)
+  // - On mobile list view: null (only list is rendered; configurations query is disabled)
+  const configModeId = isDesktop
+    ? activeSelectedId
+    : mobileView === "details"
+      ? activeSelectedId
+      : null;
 
   const {
     data: configsData,
-    isLoading: isConfigsLoading,
+    isLoading: isConfigsQueryLoading,
     isError: isConfigsError,
     error: configsError,
     refetch: refetchConfigs,
@@ -293,12 +285,21 @@ export function GameModesTab({ game }: GameModesTabProps) {
     enabled: Boolean(configModeId),
   });
 
-  // Mobile details mode: the mode rendered in the mobile details panel.
-  const mobileDetailsMode = modes.find((m) => m.id === mobileDetailsId) ?? null;
+  // Ensure loading skeleton displays while query is enabled and awaiting initial data
+  const isConfigsLoading =
+    isConfigsQueryLoading ||
+    (Boolean(configModeId) && configsData === undefined && !isConfigsError);
+
+  // Prevent stale configurations from a previously selected mode from appearing
+  // under the currently selected mode while a new query is in flight.
+  const displayedConfigs = React.useMemo(() => {
+    if (!configsData?.configurations || !selectedMode) return null;
+    return configsData.configurations.filter((c) => c.mode_id === selectedMode.id);
+  }, [configsData, selectedMode]);
 
   if (isLoading) {
     return (
-      <section aria-labelledby="game-modes-heading" className="space-y-6 pb-16">
+      <section aria-label="Game modes" className="space-y-6 pb-16">
         <div className="flex items-center justify-between border-b border-border/70 pb-3">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-8 w-24 rounded-lg" />
@@ -310,7 +311,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
 
   if (isError) {
     return (
-      <section aria-labelledby="game-modes-heading">
+      <section aria-label="Game modes">
         <GameModesErrorState
           errorMessage={error?.message}
           onRetry={() => void refetch()}
@@ -321,31 +322,31 @@ export function GameModesTab({ game }: GameModesTabProps) {
 
   if (!isLoading && !isError && modes.length === 0) {
     return (
-      <section aria-labelledby="game-modes-heading">
+      <section aria-label="Game modes">
         <GameModesEmptyState gameName={game.name} />
       </section>
     );
   }
 
   return (
-    <section aria-labelledby="game-modes-heading" className="space-y-6 pb-16">
-      {/* Desktop: Two-column master–detail workspace */}
-      <div className={`hidden ${MASTER_DETAIL_BREAKPOINT}:grid ${MASTER_DETAIL_BREAKPOINT}:grid-cols-12 ${MASTER_DETAIL_BREAKPOINT}:items-start ${MASTER_DETAIL_BREAKPOINT}:gap-6 xl:${MASTER_DETAIL_BREAKPOINT}:gap-8`}>
+    <section aria-label="Game modes" className="space-y-6 pb-16">
+      {/* Desktop: Two-column master–detail workspace (>= 1024px) */}
+      <div className="hidden lg:grid lg:grid-cols-12 lg:items-start lg:gap-6 xl:gap-8">
         {/* Left Column: Compact Modes Navigation */}
         <nav
-          id="mode-list-nav"
+          id="mode-list-nav-desktop"
           aria-label="Game modes navigation"
-          className={`col-span-5 xl:col-span-4 space-y-3`}
+          className="col-span-5 xl:col-span-4 space-y-3"
         >
           <div className="flex items-center justify-between border-b border-border/70 pb-3">
             <div className="flex items-center gap-2">
               <h3
-                id="game-modes-heading"
+                id="game-modes-heading-desktop"
                 className="font-display text-base font-bold tracking-[-0.02em] text-foreground sm:text-lg"
               >
                 Game Modes
               </h3>
-              <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.2 font-mono text-[11px] font-medium text-muted-foreground">
+              <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground">
                 {modes.length}
               </span>
             </div>
@@ -363,9 +364,9 @@ export function GameModesTab({ game }: GameModesTabProps) {
             </Button>
           </div>
 
-          <ul role="list" className="grid gap-2">
+          <ul role="list" className="grid gap-2" aria-label="Desktop game modes list">
             {modes.map((mode) => {
-              const isModeSelected: boolean = mode.id === activeSelectedId ? true : false;
+              const isModeSelected = mode.id === activeSelectedId;
               return (
                 <li key={mode.id}>
                   <GameModeListItem
@@ -385,7 +386,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
           {selectedMode ? (
             <SelectedModePanel
               mode={selectedMode}
-              configs={configsData?.configurations ?? null}
+              configs={displayedConfigs}
               isConfigsLoading={isConfigsLoading}
               isConfigsError={isConfigsError}
               configsError={configsError}
@@ -397,12 +398,12 @@ export function GameModesTab({ game }: GameModesTabProps) {
         </div>
       </div>
 
-      {/* Mobile: Two-step master–detail interaction */}
+      {/* Mobile: Two-step master–detail interaction (< 1024px) */}
       <div className="lg:hidden">
-        {mobileView === 'details' && mobileDetailsMode ? (
+        {mobileView === "details" && selectedMode ? (
           <SelectedModePanel
-            mode={mobileDetailsMode}
-            configs={configsData?.configurations ?? null}
+            mode={selectedMode}
+            configs={displayedConfigs}
             isConfigsLoading={isConfigsLoading}
             isConfigsError={isConfigsError}
             configsError={configsError}
@@ -413,9 +414,11 @@ export function GameModesTab({ game }: GameModesTabProps) {
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1.5 text-xs"
-                onClick={() => setMobileView('list')}
+                onClick={() => setMobileView("list")}
+                aria-label="Back to game modes list"
               >
-                ← Back to Modes
+                <ArrowLeft className="size-3.5" aria-hidden="true" />
+                <span>Back to Modes</span>
               </Button>
             }
           />
@@ -425,7 +428,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
             activeSelectedId={selectedModeId}
             onSelect={(id) => {
               setSelectedModeId(id);
-              setMobileView('details');
+              setMobileView("details");
             }}
             prefersReducedMotion={prefersReducedMotion}
           />
@@ -451,12 +454,12 @@ function CompactModeListMobile({
       <div className="flex items-center justify-between border-b border-border/70 pb-3">
         <div className="flex items-center gap-2">
           <h3
-            id="game-modes-heading"
+            id="game-modes-heading-mobile"
             className="font-display text-base font-bold tracking-[-0.02em] text-foreground sm:text-lg"
           >
             Game Modes
           </h3>
-          <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.2 font-mono text-[11px] font-medium text-muted-foreground">
+          <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground">
             {modes.length}
           </span>
         </div>
@@ -476,7 +479,7 @@ function CompactModeListMobile({
 
       <ul role="list" className="grid gap-2" aria-label="Game modes list">
         {modes.map((mode) => {
-          const isModeSelected: boolean = mode.id === activeSelectedId ? true : false;
+          const isModeSelected = mode.id === activeSelectedId;
           return (
             <li key={mode.id}>
               <GameModeListItem

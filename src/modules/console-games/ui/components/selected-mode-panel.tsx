@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   Calendar,
   Clock,
+  Layers,
   Pencil,
   Users,
 } from "lucide-react";
@@ -95,8 +96,6 @@ export function SelectedModePanel({
   refetchConfigs,
   backButton,
 }: SelectedModePanelProps) {
-  const configsCount = configs?.length ?? 0;
-
   return (
     <div className="space-y-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-6 shadow-xs">
       {/* Mobile: Back button */}
@@ -148,9 +147,15 @@ export function SelectedModePanel({
           value={`${mode.max_players_per_match}`}
         />
         <ModeSummaryCard
-          icon={Users}
+          icon={Layers}
           label="Configs"
-          value={configsCount}
+          value={
+            isConfigsError
+              ? "—"
+              : configs !== null
+                ? configs.length
+                : "—"
+          }
           isLoading={isConfigsLoading}
         />
         <ModeSummaryCard

@@ -166,7 +166,7 @@ function ConfigRow({
           </span>
         </span>
       </TableCell>
-      <TableCell className="hidden font-mono text-xs text-muted-framework sm:table-cell">
+      <TableCell className="hidden font-mono text-xs text-muted-foreground sm:table-cell">
         {formatDate(config.created_at)}
       </TableCell>
       <TableCell className="text-right">
@@ -178,7 +178,7 @@ function ConfigRow({
             disabled
             className="size-7 text-muted-foreground"
             title="Edit configuration (coming soon)"
-            aria-label={`Edit ${config.name}`}
+            aria-label={`Edit ${config.name} configuration (coming soon)`}
           >
             <Pencil className="size-3.5" aria-hidden="true" />
           </Button>
@@ -189,7 +189,7 @@ function ConfigRow({
             disabled
             className="size-7 text-muted-foreground hover:text-destructive"
             title="Delete configuration (coming soon)"
-            aria-label={`Delete ${config.name}`}
+            aria-label={`Delete ${config.name} configuration (coming soon)`}
           >
             <Trash2 className="size-3.5" aria-hidden="true" />
           </Button>
@@ -216,9 +216,9 @@ export function ModeTeamConfigurations({
             <h4 className="font-display text-sm font-bold uppercase tracking-wider text-foreground sm:text-base">
               Team Configurations
             </h4>
-            {!isConfigsLoading && !isConfigsError && (
-              <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.2 font-mono text-[10px] font-medium text-muted-foreground">
-                {configs?.length ?? 0}
+            {!isConfigsLoading && !isConfigsError && configs !== null && (
+              <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                {configs.length}
               </span>
             )}
           </div>
@@ -257,13 +257,13 @@ export function ModeTeamConfigurations({
           />
         )}
 
-        {!isConfigsLoading && !isConfigsError && configs?.length === 0 && (
+        {!isConfigsLoading && !isConfigsError && configs !== null && configs.length === 0 && (
           <TeamConfigsEmptyState modeName={mode.name} />
         )}
 
-        {!isConfigsLoading && !isConfigsError && configs?.length ? (
+        {!isConfigsLoading && !isConfigsError && configs !== null && configs.length > 0 && (
           <div className="overflow-hidden rounded-lg border border-border/70 bg-card/60 shadow-xs">
-            <Table>
+            <Table aria-label={`${mode.name} team configurations`}>
               <TableHeader>
                 <TableRow className="border-border/60 hover:bg-transparent">
                   <TableHead className="w-12 text-center">#</TableHead>
@@ -274,7 +274,7 @@ export function ModeTeamConfigurations({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {configs!.map((config, index) => (
+                {configs.map((config, index) => (
                   <ConfigRow
                     key={config.id}
                     config={config}
@@ -284,7 +284,7 @@ export function ModeTeamConfigurations({
               </TableBody>
             </Table>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
