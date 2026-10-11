@@ -9,7 +9,7 @@ import {
   RotateCcw,
   Users,
 } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -75,20 +75,20 @@ function GameModeListItem({
       data-selected={isSelected ? "true" : undefined}
       data-testid={`mode-row-${mode.id}`}
       className={cn(
-        "group relative flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left outline-none transition-colors duration-150 motion-reduce:transition-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+        // Base styles — no relative positioning needed since indicator is removed
+        "flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left outline-none",
+        "transition-colors duration-150 motion-reduce:transition-none",
+        "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+        // Selected: subtle muted surface with a standard border — no primary/red treatment
         isSelected
-          ? "border-primary/70 bg-primary/[0.04]"
-          : "border-transparent bg-card/40 hover:border-border hover:bg-muted/50",
+          ? "border-border-strong bg-muted/60"
+          : "border-transparent bg-card/40 hover:border-border hover:bg-muted/30",
       )}
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <ModeStatusDot active={mode.active} />
-        <span
-          className={cn(
-            "block truncate font-display text-sm font-bold tracking-[-0.02em]",
-            isSelected ? "text-primary" : "text-foreground",
-          )}
-        >
+        {/* Keep mode name in foreground — no primary color for selection */}
+        <span className="block truncate font-display text-sm font-bold tracking-[-0.02em] text-foreground">
           {mode.name}
         </span>
       </div>
@@ -104,13 +104,6 @@ function GameModeListItem({
         </span>
         <ModeStatusBadge active={mode.active} />
       </div>
-
-      {isSelected && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-0.5 rounded-l-lg bg-primary"
-        />
-      )}
     </motion.button>
   );
 }
@@ -235,6 +228,47 @@ function GameModesErrorState({
   );
 }
 
+/**
+ * Mobile transition variants.
+ *
+ * Entry (list → details): slides in from the right with a slight opacity fade.
+ * Exit (details → list): slides out to the right — restrained, matching Arena's motion language.
+ * Reduced-motion: opacity-only, no translation.
+ */
+const mobileDetailVariants = {
+  initial: (reduced: boolean) => ({
+    opacity: 0,
+    x: reduced ? 0 : 16,
+  }),
+  animate: (reduced: boolean) => ({
+    opacity: 1,
+    x: 0,
+    transition: { duration: reduced ? 0 : 0.18, ease: "easeOut" as const },
+  }),
+  exit: (reduced: boolean) => ({
+    opacity: 0,
+    x: reduced ? 0 : 16,
+    transition: { duration: reduced ? 0 : 0.14, ease: "easeIn" as const },
+  }),
+};
+
+const mobileListVariants = {
+  initial: (reduced: boolean) => ({
+    opacity: 0,
+    x: reduced ? 0 : -8,
+  }),
+  animate: (reduced: boolean) => ({
+    opacity: 1,
+    x: 0,
+    transition: { duration: reduced ? 0 : 0.18, ease: "easeOut" as const },
+  }),
+  exit: (reduced: boolean) => ({
+    opacity: 0,
+    x: reduced ? 0 : -8,
+    transition: { duration: reduced ? 0 : 0.12, ease: "easeIn" as const },
+  }),
+};
+
 export function GameModesTab({ game }: GameModesTabProps) {
   const { data, isLoading, isError, error, refetch } = useGameModesQuery(game.id);
   const modes = data?.modes ?? [];
@@ -247,23 +281,35 @@ export function GameModesTab({ game }: GameModesTabProps) {
   // Responsive layout state: matches Tailwind's lg: breakpoint (1024px)
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  // Reset selectedModeId if the selection is no longer present in available modes
-  if (selectedModeId && !modes.some((m) => m.id === selectedModeId)) {
-    setSelectedModeId(null);
-    if (mobileView === "details") {
-      setMobileView("list");
-    }
-  }
+  // Derive the valid active selection without mutating state during render.
+  // If the currently stored ID is no longer in the modes list, fall back to the
+  // first mode (for desktop auto-selection) or treat as unselected (for mobile).
+  const isSelectionValid =
+    selectedModeId !== null && modes.some((m) => m.id === selectedModeId);
 
-  // Active selected ID:
-  // - If user explicitly selected a valid mode, use it.
-  // - Otherwise, automatically default to the first mode if modes exist.
-  const activeSelectedId =
-    selectedModeId && modes.some((m) => m.id === selectedModeId)
-      ? selectedModeId
-      : (modes[0]?.id ?? null);
+  const activeSelectedId = isSelectionValid
+    ? selectedModeId
+    : (modes[0]?.id ?? null);
 
   const selectedMode = modes.find((m) => m.id === activeSelectedId) ?? null;
+
+  // If the available modes change and the previously selected ID is no longer
+  // present, we need to reset selection. We detect this by tracking the previous
+  // value of modes using a ref — the state update is then called during render
+  // (not in an effect body), which is React's approved pattern for "state derived
+  // from incoming data". It triggers one extra synchronous re-render before the
+  // browser paints, avoiding a flash of invalid selection state, and does not
+  // fall afoul of the react-hooks/set-state-in-effect rule.
+  const prevModesRef = React.useRef(modes);
+  if (prevModesRef.current !== modes) {
+    prevModesRef.current = modes;
+    if (selectedModeId !== null && modes.length > 0 && !isSelectionValid) {
+      setSelectedModeId(null);
+      if (mobileView === "details") {
+        setMobileView("list");
+      }
+    }
+  }
 
   // Derive which mode's configuration panel is actually rendered:
   // - On desktop: activeSelectedId (details panel is always visible side-by-side)
@@ -399,40 +445,69 @@ export function GameModesTab({ game }: GameModesTabProps) {
       </div>
 
       {/* Mobile: Two-step master–detail interaction (< 1024px) */}
-      <div className="lg:hidden">
-        {mobileView === "details" && selectedMode ? (
-          <SelectedModePanel
-            mode={selectedMode}
-            configs={displayedConfigs}
-            isConfigsLoading={isConfigsLoading}
-            isConfigsError={isConfigsError}
-            configsError={configsError}
-            refetchConfigs={refetchConfigs}
-            backButton={
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={() => setMobileView("list")}
-                aria-label="Back to game modes list"
-              >
-                <ArrowLeft className="size-3.5" aria-hidden="true" />
-                <span>Back to Modes</span>
-              </Button>
-            }
-          />
-        ) : (
-          <CompactModeListMobile
-            modes={modes}
-            activeSelectedId={selectedModeId}
-            onSelect={(id) => {
-              setSelectedModeId(id);
-              setMobileView("details");
-            }}
-            prefersReducedMotion={prefersReducedMotion}
-          />
-        )}
+      {/*
+        AnimatePresence with mode="wait" ensures the exiting view fully completes
+        its exit before the entering view mounts. This prevents the two panels from
+        overlapping during transition.
+
+        Keys are stable string literals so React can reliably track which child is
+        entering/exiting. Navigation state (selectedModeId) is preserved independent
+        of the animation — back-navigation preserves the selection immediately.
+      */}
+      <div className="relative overflow-hidden lg:hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          {mobileView === "details" && selectedMode ? (
+            <motion.div
+              key="details"
+              custom={prefersReducedMotion}
+              variants={mobileDetailVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <SelectedModePanel
+                mode={selectedMode}
+                configs={displayedConfigs}
+                isConfigsLoading={isConfigsLoading}
+                isConfigsError={isConfigsError}
+                configsError={configsError}
+                refetchConfigs={refetchConfigs}
+                backButton={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={() => setMobileView("list")}
+                    aria-label="Back to game modes list"
+                  >
+                    <ArrowLeft className="size-3.5" aria-hidden="true" />
+                    <span>Back to Modes</span>
+                  </Button>
+                }
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list"
+              custom={prefersReducedMotion}
+              variants={mobileListVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <CompactModeListMobile
+                modes={modes}
+                activeSelectedId={selectedModeId}
+                onSelect={(id) => {
+                  setSelectedModeId(id);
+                  setMobileView("details");
+                }}
+                prefersReducedMotion={prefersReducedMotion}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );
