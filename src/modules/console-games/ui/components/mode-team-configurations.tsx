@@ -12,22 +12,21 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  useModeTeamConfigsQuery,
-  type GameMode,
-  type ModeTeamConfiguration,
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import type {
+  GameMode,
+  ModeTeamConfiguration,
 } from "@/modules/games/queries/modes";
 
 type ModeTeamConfigurationsProps = {
   mode: GameMode;
+  /** Team configurations data - received from parent, no independent query */
+  configs?: ModeTeamConfiguration[] | null;
+  isConfigsLoading?: boolean;
+  isConfigsError?: boolean;
+  configsError?: unknown;
+  refetchConfigs?: () => void;
 };
 
 function formatDate(dateString: string): string {
@@ -167,7 +166,7 @@ function ConfigRow({
           </span>
         </span>
       </TableCell>
-      <TableCell className="hidden font-mono text-xs text-muted-foreground sm:table-cell">
+      <TableCell className="hidden font-mono text-xs text-muted-framework sm:table-cell">
         {formatDate(config.created_at)}
       </TableCell>
       <TableCell className="text-right">
@@ -200,10 +199,14 @@ function ConfigRow({
   );
 }
 
-export function ModeTeamConfigurations({ mode }: ModeTeamConfigurationsProps) {
-  const { data, isLoading, isError, error, refetch } = useModeTeamConfigsQuery(mode.id);
-  const configurations = data?.configurations ?? [];
-
+export function ModeTeamConfigurations({
+  mode,
+  configs = null,
+  isConfigsLoading = false,
+  isConfigsError = false,
+  configsError,
+  refetchConfigs,
+}: ModeTeamConfigurationsProps) {
   return (
     <div className="space-y-4 pt-2">
       {/* Section Header */}
@@ -213,9 +216,9 @@ export function ModeTeamConfigurations({ mode }: ModeTeamConfigurationsProps) {
             <h4 className="font-display text-sm font-bold uppercase tracking-wider text-foreground sm:text-base">
               Team Configurations
             </h4>
-            {!isLoading && !isError && (
+            {!isConfigsLoading && !isConfigsError && (
               <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.2 font-mono text-[10px] font-medium text-muted-foreground">
-                {configurations.length}
+                {configs?.length ?? 0}
               </span>
             )}
           </div>
@@ -241,20 +244,24 @@ export function ModeTeamConfigurations({ mode }: ModeTeamConfigurationsProps) {
 
       {/* Content States */}
       <div>
-        {isLoading && <TeamConfigsSkeleton />}
+        {isConfigsLoading && <TeamConfigsSkeleton />}
 
-        {isError && (
+        {isConfigsError && (
           <TeamConfigsErrorState
-            errorMessage={error?.message}
-            onRetry={() => void refetch()}
+            errorMessage={
+              configsError instanceof Error
+                ? configsError.message
+                : undefined
+            }
+            onRetry={refetchConfigs ?? (() => {})}
           />
         )}
 
-        {!isLoading && !isError && configurations.length === 0 && (
+        {!isConfigsLoading && !isConfigsError && configs?.length === 0 && (
           <TeamConfigsEmptyState modeName={mode.name} />
         )}
 
-        {!isLoading && !isError && configurations.length > 0 && (
+        {!isConfigsLoading && !isConfigsError && configs?.length ? (
           <div className="overflow-hidden rounded-lg border border-border/70 bg-card/60 shadow-xs">
             <Table>
               <TableHeader>
@@ -267,7 +274,7 @@ export function ModeTeamConfigurations({ mode }: ModeTeamConfigurationsProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {configurations.map((config, index) => (
+                {configs!.map((config, index) => (
                   <ConfigRow
                     key={config.id}
                     config={config}
@@ -277,7 +284,7 @@ export function ModeTeamConfigurations({ mode }: ModeTeamConfigurationsProps) {
               </TableBody>
             </Table>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

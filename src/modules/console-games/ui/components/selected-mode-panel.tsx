@@ -5,19 +5,26 @@ import {
   Calendar,
   Clock,
   Pencil,
-  Sliders,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useModeTeamConfigsQuery,
   type GameMode,
+  type ModeTeamConfiguration,
 } from "@/modules/games/queries/modes";
 import { ModeTeamConfigurations } from "./mode-team-configurations";
 
 type SelectedModePanelProps = {
   mode: GameMode;
+  /** Team configurations data - passed from parent to avoid duplicate queries */
+  configs?: ModeTeamConfiguration[] | null;
+  isConfigsLoading?: boolean;
+  isConfigsError?: boolean;
+  configsError?: Error | unknown;
+  refetchConfigs?: () => void;
+  /** Optional back button for mobile master-detail flow */
+  backButton?: React.ReactNode;
 };
 
 function formatDate(dateString: string): string {
@@ -73,18 +80,30 @@ function ModeSummaryCard({
         <Icon className="size-3.5 text-muted-foreground/70" aria-hidden="true" />
       </div>
       <div className="font-mono text-lg font-bold tracking-tight text-foreground sm:text-xl">
-        {isLoading ? <Skeleton className="h-6 w-12" /> : value}
+        {isLoading ? <Skeleton className="h-5 w-12" /> : value}
       </div>
     </div>
   );
 }
 
-export function SelectedModePanel({ mode }: SelectedModePanelProps) {
-  const { data: configsData, isLoading: isConfigsLoading } = useModeTeamConfigsQuery(mode.id);
-  const configsCount = configsData?.configurations.length ?? 0;
+export function SelectedModePanel({
+  mode,
+  configs = null,
+  isConfigsLoading = false,
+  isConfigsError = false,
+  configsError,
+  refetchConfigs,
+  backButton,
+}: SelectedModePanelProps) {
+  const configsCount = configs?.length ?? 0;
 
   return (
     <div className="space-y-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-6 shadow-xs">
+      {/* Mobile: Back button */}
+      {backButton && (
+        <div className="mb-2">{backButton}</div>
+      )}
+
       {/* Selected Mode Header */}
       <div className="flex flex-col gap-3 border-b border-border/70 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5 min-w-0">
@@ -129,8 +148,8 @@ export function SelectedModePanel({ mode }: SelectedModePanelProps) {
           value={`${mode.max_players_per_match}`}
         />
         <ModeSummaryCard
-          icon={Sliders}
-          label="Configurations"
+          icon={Users}
+          label="Configs"
           value={configsCount}
           isLoading={isConfigsLoading}
         />
@@ -147,7 +166,14 @@ export function SelectedModePanel({ mode }: SelectedModePanelProps) {
       </div>
 
       {/* Team Configurations Section */}
-      <ModeTeamConfigurations mode={mode} />
+      <ModeTeamConfigurations
+        mode={mode}
+        configs={configs}
+        isConfigsLoading={isConfigsLoading}
+        isConfigsError={isConfigsError}
+        configsError={configsError}
+        refetchConfigs={refetchConfigs}
+      />
     </div>
   );
 }

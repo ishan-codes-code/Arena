@@ -3,15 +3,18 @@
 import * as React from "react";
 import {
   AlertCircle,
-  ChevronRight,
   Layers,
   Plus,
   RotateCcw,
-  Users,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGameModesQuery, type GameMode } from "@/modules/games/queries/modes";
+import {
+  useGameModesQuery,
+  useModeTeamConfigsQuery,
+  type GameMode,
+} from "@/modules/games/queries/modes";
 import type { Game } from "@/modules/games/queries/games";
 import { cn } from "@/lib/utils";
 import { SelectedModePanel } from "./selected-mode-panel";
@@ -20,23 +23,33 @@ type GameModesTabProps = {
   game: Game;
 };
 
-function ModeStatusBadge({ active }: { active: boolean }) {
-  if (active) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2 py-0.5 text-xs font-medium text-live">
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-live shrink-0" />
-        <span>Active</span>
-      </span>
-    );
-  }
-
+function ModeStatusDot({ active }: { active: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-2 py-0.5 text-xs font-medium text-muted-foreground">
+    <span aria-hidden="true" className="relative size-2 shrink-0 rounded-full">
       <span
-        aria-hidden="true"
-        className="size-1.5 rounded-full bg-muted-foreground/60 shrink-0"
+        className={cn(
+          "absolute inset-0 rounded-full",
+          active ? "bg-live" : "bg-muted-foreground/50",
+        )}
       />
-      <span>Inactive</span>
+    </span>
+  );
+}
+
+function ModeStatusBadge({ active }: { active: boolean }) {
+  return (
+    <span
+      aria-label={active ? "Active" : "Inactive"}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium",
+        active
+          ? "border-live/30 bg-live/10 text-live"
+          : "border-border/80 bg-muted/40 text-muted-foreground",
+      )}
+    >
+      <ModeStatusDot active={active} />
+      <span className="sr-only">{active ? "Active" : "Inactive"}</span>
+      <span aria-hidden="true">{active ? "Active" : "Inactive"}</span>
     </span>
   );
 }
@@ -51,80 +64,76 @@ function GameModeListItem({
   onSelect: () => void;
 }) {
   return (
-    <button
+    <motion.button
+      layout
       type="button"
       onClick={onSelect}
       aria-pressed={isSelected}
       data-selected={isSelected ? "true" : undefined}
+      data-testid={`mode-row-${mode.id}`}
       className={cn(
-        "group relative flex w-full flex-col justify-between gap-3 rounded-lg border p-3.5 sm:p-4 text-left transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer",
+        "group relative flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left outline-none transition-colors duration-150",
         isSelected
-          ? "border-primary/70 bg-primary/[0.04] shadow-xs ring-1 ring-primary/40"
-          : "border-border/70 bg-card/60 hover:border-border hover:bg-card",
+          ? "border-primary/70 bg-primary/[0.04]"
+          : "border-transparent bg-card/40 hover:border-border hover:bg-muted/50",
       )}
     >
-      <div className="space-y-1 w-full min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <h4
-            className={cn(
-              "font-display text-base font-bold tracking-[-0.02em] transition-colors",
-              isSelected ? "text-primary" : "text-foreground group-hover:text-primary",
-            )}
-          >
-            {mode.name}
-          </h4>
-          <ModeStatusBadge active={mode.active} />
-        </div>
-
-        <p className="font-mono text-xs text-muted-foreground">
-          slug: <span className="text-foreground/90">{mode.slug}</span>
-        </p>
-
-        {mode.description && (
-          <p className="line-clamp-2 pt-0.5 text-xs leading-relaxed text-muted-foreground">
-            {mode.description}
-          </p>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between border-t border-border/50 pt-2.5 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-foreground/80">
-          <Users className="size-3 text-muted-foreground" aria-hidden="true" />
-          <span>
-            {mode.max_players_per_match}{" "}
-            {mode.max_players_per_match === 1 ? "player" : "players"} / match
-          </span>
-        </span>
-        <ChevronRight
+      <div className="flex min-w-0 items-center gap-2.5">
+        <ModeStatusDot active={mode.active} />
+        <h4
           className={cn(
-            "size-4 transition-transform duration-150",
-            isSelected
-              ? "text-primary translate-x-0.5"
-              : "text-muted-foreground/50 group-hover:text-foreground group-hover:translate-x-0.5",
+            "truncate font-display text-sm font-bold tracking-[-0.02em]",
+            isSelected ? "text-primary" : "text-foreground",
           )}
-          aria-hidden="true"
-        />
+        >
+          {mode.name}
+        </h4>
       </div>
-    </button>
+
+      <div className="flex items-center gap-2.5">
+        <span className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:inline-flex">
+          <svg
+            aria-hidden="true"
+            className="size-3 shrink-0 text-muted-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 7v3l3 3"
+            />
+          </svg>
+          <span>{mode.max_players_per_match}</span>
+        </span>
+        <ModeStatusBadge active={mode.active} />
+      </div>
+
+      {isSelected && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary"
+        />
+      )}
+    </motion.button>
   );
 }
 
-function GameModesLeftSkeleton() {
+function GameModesListSkeleton() {
   return (
-    <div className="grid gap-3" aria-busy="true" aria-label="Loading game modes">
-      {Array.from({ length: 3 }).map((_, index) => (
+    <div className="grid gap-2.5" aria-busy="true" aria-label="Loading game modes">
+      {Array.from({ length: 4 }).map((_, index) => (
         <div
-          key={`mode-left-skeleton-${index}`}
-          className="flex flex-col gap-3 rounded-lg border border-border/60 bg-card/40 p-3.5 sm:p-4"
+          key={`mode-skeleton-${index}`}
+          className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2.5"
         >
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-5 w-32 sm:w-40" />
-            <Skeleton className="h-4 w-14 rounded-full" />
+          <div className="flex items-center gap-2.5">
+            <Skeleton className="size-2 rounded-full" />
+            <Skeleton className="h-4 w-24" />
           </div>
-          <Skeleton className="h-3 w-24 font-mono" />
-          <div className="border-t border-border/40 pt-2">
-            <Skeleton className="h-4 w-28" />
-          </div>
+          <Skeleton className="h-5 w-16 rounded-full" />
         </div>
       ))}
     </div>
@@ -134,32 +143,39 @@ function GameModesLeftSkeleton() {
 function SelectedModeSkeleton() {
   return (
     <div
-      className="space-y-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-6 shadow-xs"
+      className="space-y-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-6"
       aria-busy="true"
       aria-label="Loading selected mode details"
     >
-      <div className="flex items-center justify-between border-b border-border/70 pb-5">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-48 sm:w-64" />
-          <Skeleton className="h-4 w-32 font-mono" />
+      <div className="flex flex-col gap-3 border-b border-border/70 pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Skeleton className="h-7 w-48 sm:w-64" />
+            <Skeleton className="h-5 w-14 rounded-full" />
+          </div>
+          <Skeleton className="h-3 w-32 font-mono" />
+          <Skeleton className="mt-1 h-3 w-full max-w-sm" />
         </div>
-        <Skeleton className="h-8 w-24 rounded-lg" />
+        <Skeleton className="mt-2 h-8 w-24 rounded-lg sm:mt-0" />
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={`summary-skeleton-${index}`}
-            className="rounded-lg border border-border/70 bg-card/60 p-3.5 sm:p-4 space-y-2"
+            className="rounded-lg border border-border/70 bg-card/60 p-3.5 sm:p-4"
           >
-            <Skeleton className="h-3 w-20" />
+            <Skeleton className="mb-2 h-3 w-20" />
             <Skeleton className="h-6 w-12" />
           </div>
         ))}
       </div>
 
       <div className="space-y-3 pt-2">
-        <Skeleton className="h-5 w-40" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-48" />
+        </div>
         <div className="rounded-lg border border-border/70 bg-card/60 p-4">
           <Skeleton className="h-24 w-full" />
         </div>
@@ -225,6 +241,13 @@ function GameModesErrorState({
   );
 }
 
+/**
+ * The master-detail breakpoint. Below this, the workspace uses a two-step
+ * master–detail interaction (list → details with back navigation). Above this,
+ * the list and details are shown side by side.
+ */
+const MASTER_DETAIL_BREAKPOINT = "lg";
+
 export function GameModesTab({ game }: GameModesTabProps) {
   const { data, isLoading, isError, error, refetch } = useGameModesQuery(game.id);
   const modes = data?.modes ?? [];
@@ -239,92 +262,198 @@ export function GameModesTab({ game }: GameModesTabProps) {
 
   const selectedMode = modes.find((m) => m.id === activeSelectedId) ?? null;
 
-  return (
-    <section aria-labelledby="game-modes-heading" className="space-y-6 pb-16">
-      {/* Modes Workspace Content */}
-      {isLoading && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-          <div className="lg:col-span-5 xl:col-span-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-border/70 pb-3">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-8 w-24 rounded-lg" />
-            </div>
-            <GameModesLeftSkeleton />
-          </div>
-          <div className="lg:col-span-7 xl:col-span-8">
-            <SelectedModeSkeleton />
-          </div>
-        </div>
-      )}
+  // Fetch team configs only for the currently selected mode.
+  // The query is enabled only when a mode is selected, preventing unnecessary
+  // fetches for modes the user has not opened.
+  const {
+    data: configsData,
+    isLoading: isConfigsLoading,
+    isError: isConfigsError,
+    error: configsError,
+    refetch: refetchConfigs,
+  } = useModeTeamConfigsQuery(activeSelectedId ?? "", {
+    enabled: Boolean(activeSelectedId),
+  });
 
-      {isError && (
+  if (isLoading) {
+    return (
+      <section aria-labelledby="game-modes-heading" className="space-y-6 pb-16">
+        <div className="flex items-center justify-between border-b border-border/70 pb-3">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-8 w-24 rounded-lg" />
+        </div>
+        <GameModesListSkeleton />
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section aria-labelledby="game-modes-heading">
         <GameModesErrorState
           errorMessage={error?.message}
           onRetry={() => void refetch()}
         />
-      )}
+      </section>
+    );
+  }
 
-      {!isLoading && !isError && modes.length === 0 && (
+  if (!isLoading && !isError && modes.length === 0) {
+    return (
+      <section aria-labelledby="game-modes-heading">
         <GameModesEmptyState gameName={game.name} />
-      )}
+      </section>
+    );
+  }
 
-      {!isLoading && !isError && modes.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-          {/* Left Panel: Modes Selection List */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-border/70 pb-3">
-              <div className="flex items-center gap-2">
-                <h3
-                  id="game-modes-heading"
-                  className="font-display text-base font-bold tracking-[-0.02em] text-foreground sm:text-lg"
-                >
-                  Game Modes
-                </h3>
-                <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.2 font-mono text-[11px] font-medium text-muted-foreground">
-                  {modes.length}
-                </span>
-              </div>
+  return (
+    <section aria-labelledby="game-modes-heading" className="space-y-6 pb-16">
+      {/* Desktop: Two-column master–detail workspace */}
+      <div className={`hidden ${MASTER_DETAIL_BREAKPOINT}:grid ${MASTER_DETAIL_BREAKPOINT}:grid-cols-12 ${MASTER_DETAIL_BREAKPOINT}:items-start ${MASTER_DETAIL_BREAKPOINT}:gap-6 xl:${MASTER_DETAIL_BREAKPOINT}:gap-8`}>
+        {/* Left Column: Compact Modes Navigation */}
+        <nav
+          id="mode-list-nav"
+          aria-label="Game modes navigation"
+          className={`col-span-5 xl:col-span-4 space-y-3`}
+        >
+          <div className="flex items-center justify-between border-b border-border/70 pb-3">
+            <div className="flex items-center gap-2">
+              <h3
+                id="game-modes-heading"
+                className="font-display text-base font-bold tracking-[-0.02em] text-foreground sm:text-lg"
+              >
+                Game Modes
+              </h3>
+              <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.2 font-mono text-[11px] font-medium text-muted-foreground">
+                {modes.length}
+              </span>
+            </div>
 
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled
+              className="h-8 gap-1.5 text-xs text-muted-foreground"
+              title="Add Mode modal will be available in an upcoming update"
+            >
+              <Plus className="size-3.5" aria-hidden="true" />
+              Add Mode
+            </Button>
+          </div>
+
+          <ul role="list" className="grid gap-2">
+            {modes.map((mode) => (
+              <li key={mode.id}>
+                <GameModeListItem
+                  mode={mode}
+                  isSelected={mode.id === activeSelectedId}
+                  onSelect={() => setSelectedModeId(mode.id)}
+                />
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Right Column: Selected Mode Workspace */}
+        <div className="col-span-7 xl:col-span-8 min-w-0">
+          {selectedMode ? (
+            <SelectedModePanel
+              mode={selectedMode}
+              configs={configsData?.configurations ?? null}
+              isConfigsLoading={isConfigsLoading}
+              isConfigsError={isConfigsError}
+              configsError={configsError}
+              refetchConfigs={refetchConfigs}
+            />
+          ) : (
+            <SelectedModeSkeleton />
+          )}
+        </div>
+      </div>
+
+      {/* Mobile: Two-step master–detail interaction */}
+      <div className="lg:hidden">
+        {selectedMode ? (
+          <SelectedModePanel
+            mode={selectedMode}
+            configs={configsData?.configurations ?? null}
+            isConfigsLoading={isConfigsLoading}
+            isConfigsError={isConfigsError}
+            configsError={configsError}
+            refetchConfigs={refetchConfigs}
+            backButton={
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled
-                className="h-8 gap-1.5 text-xs text-muted-foreground"
-                title="Add Mode modal will be available in an upcoming update"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => setSelectedModeId(null)}
               >
-                <Plus className="size-3.5" aria-hidden="true" />
-                Add Mode
+                ← Back to Modes
               </Button>
-            </div>
-
-            <ul
-              role="list"
-              className="grid gap-2.5"
-              aria-label={`${game.name} game modes`}
-            >
-              {modes.map((mode) => (
-                <li key={mode.id}>
-                  <GameModeListItem
-                    mode={mode}
-                    isSelected={mode.id === activeSelectedId}
-                    onSelect={() => setSelectedModeId(mode.id)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Right Panel: Selected Mode Workspace */}
-          <div className="lg:col-span-7 xl:col-span-8 min-w-0">
-            {selectedMode ? (
-              <SelectedModePanel mode={selectedMode} />
-            ) : (
-              <SelectedModeSkeleton />
-            )}
-          </div>
-        </div>
-      )}
+            }
+          />
+        ) : (
+          <CompactModeListMobile
+            modes={modes}
+            activeSelectedId={activeSelectedId}
+            onSelect={setSelectedModeId}
+          />
+        )}
+      </div>
     </section>
+  );
+}
+
+function CompactModeListMobile({
+  modes,
+  activeSelectedId,
+  onSelect,
+}: {
+  modes: GameMode[];
+  activeSelectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between border-b border-border/70 pb-3">
+        <div className="flex items-center gap-2">
+          <h3
+            id="game-modes-heading"
+            className="font-display text-base font-bold tracking-[-0.02em] text-foreground sm:text-lg"
+          >
+            Game Modes
+          </h3>
+          <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/60 px-2 py-0.2 font-mono text-[11px] font-medium text-muted-foreground">
+            {modes.length}
+          </span>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled
+          className="h-8 gap-1.5 text-xs text-muted-foreground"
+          title="Add Mode modal will be available in an upcoming update"
+        >
+          <Plus className="size-3.5" aria-hidden="true" />
+          Add Mode
+        </Button>
+      </div>
+
+      <ul role="list" className="grid gap-2" aria-label="Game modes list">
+        {modes.map((mode) => (
+          <li key={mode.id}>
+            <GameModeListItem
+              mode={mode}
+              isSelected={mode.id === activeSelectedId}
+              onSelect={() => onSelect(mode.id)}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

@@ -73,11 +73,20 @@ export function useGameModeQuery(modeId: string) {
  * Fetch all team configurations for a given mode.
  *
  * Query key structure: ["games", "modes", "configurations", "list", mode_id]
+ *
+ * The `opts` parameter allows callers to control query behavior, such as
+ * gating the fetch with `enabled` when the mode id is not yet available.
  */
-export function useModeTeamConfigsQuery(modeId: string) {
+export function useModeTeamConfigsQuery(
+  modeId: string,
+  opts?: { enabled?: boolean },
+) {
   const trpc = useTRPC();
 
   return useQuery(
-    trpc.games.modes.configurations.list.queryOptions({ mode_id: modeId }),
+    trpc.games.modes.configurations.list.queryOptions(
+      { mode_id: modeId },
+      opts,
+    ),
   );
 }
