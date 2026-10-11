@@ -7,7 +7,7 @@ import {
   Plus,
   RotateCcw,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -58,14 +58,16 @@ function GameModeListItem({
   mode,
   isSelected,
   onSelect,
+  prefersReducedMotion,
 }: {
   mode: GameMode;
   isSelected: boolean;
   onSelect: () => void;
+  prefersReducedMotion: boolean;
 }) {
   return (
     <motion.button
-      layout
+      layout={!prefersReducedMotion}
       type="button"
       onClick={onSelect}
       aria-pressed={isSelected}
@@ -253,8 +255,13 @@ export function GameModesTab({ game }: GameModesTabProps) {
   const modes = data?.modes ?? [];
 
   const [selectedModeId, setSelectedModeId] = React.useState<string | null>(null);
+  // Separate mobile view state from selection state:
+  // 'list' shows the mode list only, 'details' shows the master-detail panel
+  const [mobileView, setMobileView] = React.useState<'list' | 'details'>('list');
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
-  // Derive active selected mode, defaulting to first mode in the list
+  // Desktop: auto-select first mode when nothing selected.
+  // Mobile: valid selection or first mode fallback for details view.
   const activeSelectedId =
     selectedModeId && modes.some((m) => m.id === selectedModeId)
       ? selectedModeId
@@ -262,18 +269,32 @@ export function GameModesTab({ game }: GameModesTabProps) {
 
   const selectedMode = modes.find((m) => m.id === activeSelectedId) ?? null;
 
-  // Fetch team configs only for the currently selected mode.
-  // The query is enabled only when a mode is selected, preventing unnecessary
-  // fetches for modes the user has not opened.
+  // Mobile details view: the mode being viewed. Falls back to first mode if selection invalid.
+  const mobileDetailsId =
+    mobileView === 'details' && selectedModeId && modes.some((m) => m.id === selectedModeId)
+      ? selectedModeId
+      : mobileView === 'details' && activeSelectedId
+        ? activeSelectedId
+        : null;
+
+  // Fetch team configs for the mode currently being viewed:
+  // - On desktop: activeSelectedId (always valid when modes exist)
+  // - On mobile details: the mode being viewed
+  // - On mobile list: no fetch (disabled, cache retained)
+  const configModeId = mobileView === 'list' ? null : activeSelectedId;
+
   const {
     data: configsData,
     isLoading: isConfigsLoading,
     isError: isConfigsError,
     error: configsError,
     refetch: refetchConfigs,
-  } = useModeTeamConfigsQuery(activeSelectedId ?? "", {
-    enabled: Boolean(activeSelectedId),
+  } = useModeTeamConfigsQuery(configModeId ?? "", {
+    enabled: Boolean(configModeId),
   });
+
+  // Mobile details mode: the mode rendered in the mobile details panel.
+  const mobileDetailsMode = modes.find((m) => m.id === mobileDetailsId) ?? null;
 
   if (isLoading) {
     return (
@@ -343,15 +364,19 @@ export function GameModesTab({ game }: GameModesTabProps) {
           </div>
 
           <ul role="list" className="grid gap-2">
-            {modes.map((mode) => (
-              <li key={mode.id}>
-                <GameModeListItem
-                  mode={mode}
-                  isSelected={mode.id === activeSelectedId}
-                  onSelect={() => setSelectedModeId(mode.id)}
-                />
-              </li>
-            ))}
+            {modes.map((mode) => {
+              const isModeSelected: boolean = mode.id === activeSelectedId ? true : false;
+              return (
+                <li key={mode.id}>
+                  <GameModeListItem
+                    mode={mode}
+                    isSelected={isModeSelected}
+                    onSelect={() => setSelectedModeId(mode.id)}
+                    prefersReducedMotion={prefersReducedMotion}
+                  />
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -374,9 +399,9 @@ export function GameModesTab({ game }: GameModesTabProps) {
 
       {/* Mobile: Two-step master–detail interaction */}
       <div className="lg:hidden">
-        {selectedMode ? (
+        {mobileView === 'details' && mobileDetailsMode ? (
           <SelectedModePanel
-            mode={selectedMode}
+            mode={mobileDetailsMode}
             configs={configsData?.configurations ?? null}
             isConfigsLoading={isConfigsLoading}
             isConfigsError={isConfigsError}
@@ -388,7 +413,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1.5 text-xs"
-                onClick={() => setSelectedModeId(null)}
+                onClick={() => setMobileView('list')}
               >
                 ← Back to Modes
               </Button>
@@ -397,8 +422,12 @@ export function GameModesTab({ game }: GameModesTabProps) {
         ) : (
           <CompactModeListMobile
             modes={modes}
-            activeSelectedId={activeSelectedId}
-            onSelect={setSelectedModeId}
+            activeSelectedId={selectedModeId}
+            onSelect={(id) => {
+              setSelectedModeId(id);
+              setMobileView('details');
+            }}
+            prefersReducedMotion={prefersReducedMotion}
           />
         )}
       </div>
@@ -410,10 +439,12 @@ function CompactModeListMobile({
   modes,
   activeSelectedId,
   onSelect,
+  prefersReducedMotion,
 }: {
   modes: GameMode[];
   activeSelectedId: string | null;
   onSelect: (id: string) => void;
+  prefersReducedMotion: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -444,15 +475,19 @@ function CompactModeListMobile({
       </div>
 
       <ul role="list" className="grid gap-2" aria-label="Game modes list">
-        {modes.map((mode) => (
-          <li key={mode.id}>
-            <GameModeListItem
-              mode={mode}
-              isSelected={mode.id === activeSelectedId}
-              onSelect={() => onSelect(mode.id)}
-            />
-          </li>
-        ))}
+        {modes.map((mode) => {
+          const isModeSelected: boolean = mode.id === activeSelectedId ? true : false;
+          return (
+            <li key={mode.id}>
+              <GameModeListItem
+                mode={mode}
+                isSelected={isModeSelected}
+                onSelect={() => onSelect(mode.id)}
+                prefersReducedMotion={prefersReducedMotion}
+              />
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
