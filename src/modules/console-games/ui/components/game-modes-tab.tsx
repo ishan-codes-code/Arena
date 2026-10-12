@@ -21,6 +21,7 @@ import type { Game } from "@/modules/games/queries/games";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { SelectedModePanel } from "./selected-mode-panel";
+import { AddGameModeForm } from "./add-game-mode-form";
 
 type GameModesTabProps = {
   game: Game;
@@ -171,7 +172,13 @@ function SelectedModeSkeleton() {
   );
 }
 
-function GameModesEmptyState({ gameName }: { gameName: string }) {
+function GameModesEmptyState({
+  gameName,
+  onAddMode,
+}: {
+  gameName: string;
+  onAddMode?: () => void;
+}) {
   return (
     <div
       role="status"
@@ -187,6 +194,20 @@ function GameModesEmptyState({ gameName }: { gameName: string }) {
         {gameName} doesn&apos;t have any competition modes configured yet. Modes
         define match types, team structures, and player limits for tournaments.
       </p>
+      {onAddMode && (
+        <div className="mt-5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onAddMode}
+            className="h-8 gap-1.5 text-xs"
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+            Add Mode
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -276,6 +297,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
   const [selectedModeId, setSelectedModeId] = React.useState<string | null>(null);
   // Separate mobile view state ('list' | 'details') for single-column viewport flow
   const [mobileView, setMobileView] = React.useState<"list" | "details">("list");
+  const [isAddModeOpen, setIsAddModeOpen] = React.useState(false);
   const prefersReducedMotion = useReducedMotion() ?? false;
 
   // Responsive layout state: matches Tailwind's lg: breakpoint (1024px)
@@ -369,7 +391,14 @@ export function GameModesTab({ game }: GameModesTabProps) {
   if (!isLoading && !isError && modes.length === 0) {
     return (
       <section aria-label="Game modes">
-        <GameModesEmptyState gameName={game.name} />
+        <GameModesEmptyState
+          gameName={game.name}
+          onAddMode={() => setIsAddModeOpen(true)}
+        />
+        <AddGameModeForm
+          open={isAddModeOpen}
+          onOpenChange={setIsAddModeOpen}
+        />
       </section>
     );
   }
@@ -401,9 +430,8 @@ export function GameModesTab({ game }: GameModesTabProps) {
               type="button"
               variant="outline"
               size="sm"
-              disabled
-              className="h-8 gap-1.5 text-xs text-muted-foreground"
-              title="Add Mode modal will be available in an upcoming update"
+              onClick={() => setIsAddModeOpen(true)}
+              className="h-8 gap-1.5 text-xs"
             >
               <Plus className="size-3.5" aria-hidden="true" />
               Add Mode
@@ -503,12 +531,19 @@ export function GameModesTab({ game }: GameModesTabProps) {
                   setSelectedModeId(id);
                   setMobileView("details");
                 }}
+                onAddMode={() => setIsAddModeOpen(true)}
                 prefersReducedMotion={prefersReducedMotion}
               />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Add Game Mode Form Modal (Desktop Dialog / Mobile Sheet) */}
+      <AddGameModeForm
+        open={isAddModeOpen}
+        onOpenChange={setIsAddModeOpen}
+      />
     </section>
   );
 }
@@ -517,11 +552,13 @@ function CompactModeListMobile({
   modes,
   activeSelectedId,
   onSelect,
+  onAddMode,
   prefersReducedMotion,
 }: {
   modes: GameMode[];
   activeSelectedId: string | null;
   onSelect: (id: string) => void;
+  onAddMode: () => void;
   prefersReducedMotion: boolean;
 }) {
   return (
@@ -543,9 +580,8 @@ function CompactModeListMobile({
           type="button"
           variant="outline"
           size="sm"
-          disabled
-          className="h-8 gap-1.5 text-xs text-muted-foreground"
-          title="Add Mode modal will be available in an upcoming update"
+          onClick={onAddMode}
+          className="h-8 gap-1.5 text-xs"
         >
           <Plus className="size-3.5" aria-hidden="true" />
           Add Mode
