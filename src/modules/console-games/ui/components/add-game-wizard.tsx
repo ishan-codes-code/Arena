@@ -21,11 +21,9 @@ import {
 import { FieldError } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
 import type { GameFormInput, GameFormValues } from "./game-form-schema";
-import {
-  BasicInformationStep,
-  GameArtworkStep,
-  PublishingSettingsStep,
-} from "./add-game-form-fields";
+import { BasicInformationStep } from "./basic-information-step";
+import { GameArtworkStep } from "./game-artwork-step";
+import { PublishingSettingsStep } from "./publishing-settings-step";
 
 export type AddGameWizardState = {
   form: UseFormReturn<GameFormInput, undefined, GameFormValues>;
