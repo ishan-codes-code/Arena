@@ -2,8 +2,16 @@ import { and, asc, eq } from "drizzle-orm";
 import type { z } from "zod";
 
 import { db } from "@/lib/db";
-import { gameModes, modeTeamConfigurations, type NewGameMode, type NewModeTeamConfiguration } from "@/lib/db/schema";
 import {
+  gameModes,
+  games,
+  modeTeamConfigurations,
+  type NewGameMode,
+  type NewModeTeamConfiguration,
+} from "@/lib/db/schema";
+import { GameNotFoundError } from "./operations";
+import {
+  createModeWithConfigurationsSchema,
   createModeSchema,
   updateModeSchema,
   deleteModeSchema,
@@ -79,6 +87,22 @@ function isTeamSizeConflict(error: unknown): boolean {
   return isUniqueViolation(error, "mode_team_configurations_mode_id_team_size_unique");
 }
 
+function isGameForeignKeyViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return false;
+  }
+  if (error.code !== "23503") {
+    return false;
+  }
+  const constraint =
+    "constraint_name" in error
+      ? error.constraint_name
+      : "constraint" in error
+        ? error.constraint
+        : undefined;
+  return constraint === "game_modes_game_id_games_id_fk";
+}
+
 // ---------------------------------------------------------------------------
 // Mode operations
 // ---------------------------------------------------------------------------
@@ -114,6 +138,65 @@ export async function createMode(input: z.infer<typeof createModeSchema>) {
   } catch (error) {
     if (isModeSlugConflict(error)) {
       throw new ModeSlugConflictError();
+    }
+    throw error;
+  }
+}
+
+export async function createModeWithConfigurations(
+  input: z.infer<typeof createModeWithConfigurationsSchema>,
+) {
+  const { team_configurations: configurationsInput, ...modeInput } = input;
+  const teamSizes = new Set<number>();
+  for (const configuration of configurationsInput) {
+    if (teamSizes.has(configuration.team_size)) {
+      throw new TeamConfigConflictError();
+    }
+    teamSizes.add(configuration.team_size);
+  }
+
+  try {
+    return await db.transaction(async (tx) => {
+      const [game] = await tx
+        .select({ id: games.id })
+        .from(games)
+        .where(eq(games.id, modeInput.game_id))
+        .limit(1);
+
+      if (!game) {
+        throw new GameNotFoundError();
+      }
+
+      const [mode] = await tx
+        .insert(gameModes)
+        .values(modeInput)
+        .returning();
+
+      if (!mode) {
+        throw new Error("The game mode insert returned no row.");
+      }
+
+      const configurations = await tx
+        .insert(modeTeamConfigurations)
+        .values(
+          configurationsInput.map((configuration) => ({
+            ...configuration,
+            mode_id: mode.id,
+          })),
+        )
+        .returning();
+
+      return { mode, configurations };
+    });
+  } catch (error) {
+    if (isModeSlugConflict(error)) {
+      throw new ModeSlugConflictError();
+    }
+    if (isTeamSizeConflict(error)) {
+      throw new TeamConfigConflictError();
+    }
+    if (isGameForeignKeyViolation(error)) {
+      throw new GameNotFoundError();
     }
     throw error;
   }

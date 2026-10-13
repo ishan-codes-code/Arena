@@ -6,6 +6,7 @@ import {
   deleteGameSchema,
   updateGameSchema,
   createModeSchema,
+  createModeWithConfigurationsSchema,
   updateModeSchema,
   deleteModeSchema,
   getModeSchema,
@@ -27,6 +28,7 @@ import {
   listModes,
   getMode,
   createMode,
+  createModeWithConfigurations,
   updateMode,
   deactivateMode,
   listTeamConfigs,
@@ -158,6 +160,38 @@ const modesRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create game mode.",
+        });
+      }
+    }),
+
+  createWithConfigurations: adminProcedure
+    .input(createModeWithConfigurationsSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await createModeWithConfigurations(input);
+      } catch (error) {
+        if (error instanceof GameNotFoundError) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "The parent game was not found.",
+          });
+        }
+        if (error instanceof ModeSlugConflictError) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "A mode with this slug already exists for this game.",
+          });
+        }
+        if (error instanceof TeamConfigConflictError) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "A configuration with this team size already exists for this mode.",
+          });
+        }
+        console.error("Failed to create game mode with team configurations.");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create game mode with team configurations.",
         });
       }
     }),
