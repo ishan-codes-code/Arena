@@ -3,8 +3,10 @@
 
 import { useState } from "react";
 import { useForm, type FieldErrors } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import {
   AlertDialog,
@@ -17,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/animate-ui/primitives/base/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useTRPC } from "@/trpc/client";
 import { AddGameModeFormDialog } from "./add-game-mode-form-dialog";
 import { GameModeFormFields } from "./game-mode-form-fields";
 import { TeamConfigurationFields } from "./team-configuration-fields";
@@ -28,14 +31,21 @@ import {
 } from "./add-game-mode-schema";
 
 export type AddGameModeFormProps = {
+  gameId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-export function AddGameModeForm({ open, onOpenChange }: AddGameModeFormProps) {
+export function AddGameModeForm({
+  gameId,
+  open,
+  onOpenChange,
+}: AddGameModeFormProps) {
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const [discardDialogContainer, setDiscardDialogContainer] =
     useState<HTMLFormElement | null>(null);
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   const form = useForm<AddGameModeInput, undefined, AddGameModeValues>({
     resolver: zodResolver(addGameModeSchema),
@@ -55,7 +65,38 @@ export function AddGameModeForm({ open, onOpenChange }: AddGameModeFormProps) {
     setIsDiscardDialogOpen(false);
   };
 
+  const createMutation = useMutation(
+    trpc.games.modes.createWithConfigurations.mutationOptions({
+      onSuccess: async ({ mode, configurations }) => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.games.modes.list.queryKey({ game_id: gameId }),
+        });
+        toast.success("Game mode created", {
+          description: `"${mode.name}" was created with ${configurations.length} team configuration(s).`,
+        });
+        resetForm();
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        const code = error.data?.code;
+        const description =
+          code === "CONFLICT"
+            ? "That mode slug or team size is already in use. Update the slug or team sizes and try again."
+            : code === "NOT_FOUND"
+              ? "This game is no longer available. Refresh the games list and try again."
+              : code === "UNAUTHORIZED"
+                ? "You must be an admin to add game modes."
+                : code === "FORBIDDEN"
+                  ? "You don't have permission to add game modes."
+                  : "We couldn't create the game mode. Please try again.";
+
+        toast.error("Failed to create game mode", { description });
+      },
+    }),
+  );
+
   const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && createMutation.isPending) return;
     if (!nextOpen && isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -67,6 +108,7 @@ export function AddGameModeForm({ open, onOpenChange }: AddGameModeFormProps) {
   };
 
   const handleCancel = () => {
+    if (createMutation.isPending) return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -76,16 +118,25 @@ export function AddGameModeForm({ open, onOpenChange }: AddGameModeFormProps) {
   };
 
   const discardDraft = () => {
+    if (createMutation.isPending) return;
     resetForm();
     onOpenChange(false);
   };
 
   const handleValidSubmit = (values: AddGameModeValues) => {
-    toast.success("Game mode created", {
-      description: `Draft for "${values.name}" with ${values.team_configurations.length} configuration(s) is ready.`,
+    if (createMutation.isPending) return;
+    createMutation.mutate({
+      game_id: gameId,
+      name: values.name,
+      slug: values.slug,
+      description: values.description || null,
+      max_players_per_match: values.max_players_per_match,
+      active: values.active,
+      team_configurations: values.team_configurations.map((configuration) => ({
+        name: configuration.name,
+        team_size: configuration.team_size,
+      })),
     });
-    resetForm();
-    onOpenChange(false);
   };
 
   const handleInvalid = (errors: FieldErrors<AddGameModeInput>) => {
@@ -134,6 +185,7 @@ export function AddGameModeForm({ open, onOpenChange }: AddGameModeFormProps) {
             <Button
               type="button"
               variant="outline"
+              disabled={createMutation.isPending}
               onClick={handleCancel}
               className="h-9 px-4 text-sm"
             >
@@ -141,9 +193,17 @@ export function AddGameModeForm({ open, onOpenChange }: AddGameModeFormProps) {
             </Button>
             <Button
               type="submit"
+              disabled={createMutation.isPending}
               className="h-9 px-4 text-sm font-semibold"
             >
-              Create Mode
+              {createMutation.isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Creating Mode...
+                </>
+              ) : (
+                "Create Mode"
+              )}
             </Button>
           </div>
         </form>
@@ -176,6 +236,7 @@ export function AddGameModeForm({ open, onOpenChange }: AddGameModeFormProps) {
               <Button
                 type="button"
                 variant="destructive"
+                disabled={createMutation.isPending}
                 onClick={discardDraft}
               >
                 Discard

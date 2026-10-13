@@ -110,6 +110,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
           onAddMode={() => setIsAddModeOpen(true)}
         />
         <AddGameModeForm
+          gameId={game.id}
           open={isAddModeOpen}
           onOpenChange={setIsAddModeOpen}
         />
@@ -145,6 +146,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
       />
 
       <AddGameModeForm
+        gameId={game.id}
         open={isAddModeOpen}
         onOpenChange={setIsAddModeOpen}
       />
