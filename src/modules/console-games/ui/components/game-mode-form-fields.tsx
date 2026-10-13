@@ -7,7 +7,7 @@ import {
   type UseFormReturn,
 } from "react-hook-form";
 
-import { Switch } from "@/components/animate-ui/components/headless/switch";
+import { Switch } from "@/components/ui/switch";
 import {
   Field,
   FieldContent,
@@ -267,7 +267,7 @@ export function GameModeFormFields({ form }: { form: GameModeForm }) {
               id="mode-active"
               ref={field.ref}
               checked={Boolean(field.value)}
-              onChange={field.onChange}
+              onCheckedChange={field.onChange}
               onBlur={field.onBlur}
               aria-labelledby="mode-active-label"
               aria-describedby="mode-active-description"

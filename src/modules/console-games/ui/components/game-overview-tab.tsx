@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ImageOff, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/animate-ui/components/headless/switch";
+import { Switch } from "@/components/ui/switch";
 import { isHttpUrl } from "@/modules/games/schemas";
 import type { Game } from "@/modules/games/queries/games";
 import { useGameUpdateMutation } from "./game-update-mutation";
@@ -559,7 +559,7 @@ export function GameOverviewTab({ game }: GameOverviewTabProps) {
             <Switch
               id="game-featured-toggle"
               checked={formValues.is_featured}
-              onChange={(checked) =>
+              onCheckedChange={(checked) =>
                 updateField("is_featured", Boolean(checked))
               }
               className="h-6 w-11 cursor-pointer"

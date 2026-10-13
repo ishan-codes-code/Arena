@@ -29,6 +29,7 @@ function Sheet(props: SheetProps) {
       <SheetPrimitive.Root
         data-slot="sheet"
         {...props}
+        open={isOpen}
         onOpenChange={setIsOpen}
       />
     </SheetProvider>

@@ -10,7 +10,7 @@ import {
 } from "react-hook-form";
 import { ImageOff } from "lucide-react";
 
-import { Switch } from "@/components/animate-ui/components/headless/switch";
+import { Switch } from "@/components/ui/switch";
 import {
   Field,
   FieldContent,
@@ -180,7 +180,8 @@ function TextInputField({
   );
 }
 
-export { slugify } from "./add-game-mode-schema";
+import { slugify } from "./add-game-mode-schema";
+export { slugify };
 
 export function BasicInformationStep({
   form,
@@ -566,7 +567,7 @@ export function PublishingSettingsStep({
               id="game-featured"
               ref={field.ref}
               checked={field.value}
-              onChange={field.onChange}
+              onCheckedChange={field.onChange}
               onBlur={field.onBlur}
               aria-labelledby="game-featured-label"
               aria-describedby="game-featured-description"
