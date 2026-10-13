@@ -6,11 +6,17 @@ import {
   Layers,
   Plus,
   RotateCcw,
+  Trash2,
   Users,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { MotionConfig } from "motion/react";
 
 import { Button } from "@/components/ui/button";
+import {
+  RippleButton,
+  RippleButtonRipples,
+} from "@/components/animate-ui/components/buttons/ripple";
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
   GameMode,
@@ -29,7 +35,11 @@ export type ModeDetailsPresentation = {
 
 function ModeStatusDot({ active }: { active: boolean }) {
   return (
-    <span aria-hidden="true" className="relative size-2 shrink-0 rounded-full">
+    <span
+      role="img"
+      aria-label={active ? "Active" : "Inactive"}
+      className="relative size-2 shrink-0 rounded-full"
+    >
       <span
         className={cn(
           "absolute inset-0 rounded-full",
@@ -40,60 +50,52 @@ function ModeStatusDot({ active }: { active: boolean }) {
   );
 }
 
-function ModeStatusBadge({ active }: { active: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium",
-        active
-          ? "border-live/30 bg-live/10 text-live"
-          : "border-border/80 bg-muted/40 text-muted-foreground",
-      )}
-    >
-      <ModeStatusDot active={active} />
-      <span>{active ? "Active" : "Inactive"}</span>
-    </span>
-  );
-}
-
 function GameModeListItem({
   mode,
   isSelected,
   onSelect,
+  onRequestDeleteMode,
+  isDeletePending,
   prefersReducedMotion,
 }: {
   mode: GameMode;
   isSelected: boolean;
   onSelect: () => void;
+  onRequestDeleteMode: (mode: GameMode) => void;
+  isDeletePending: boolean;
   prefersReducedMotion: boolean;
 }) {
   return (
-    <motion.button
+    <motion.div
       layout={!prefersReducedMotion}
-      type="button"
-      onClick={onSelect}
-      aria-pressed={isSelected}
-      data-selected={isSelected ? "true" : undefined}
-      data-testid={`mode-row-${mode.id}`}
       className={cn(
-        "flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left outline-none",
-        "transition-colors duration-150 motion-reduce:transition-none",
-        "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+        "relative flex w-full min-w-0 items-center rounded-lg border transition-colors duration-150 motion-reduce:transition-none",
+        "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/50",
         isSelected
           ? "border-border-strong bg-muted/60"
           : "border-transparent bg-card/40 hover:border-border hover:bg-muted/30",
       )}
     >
-      <div className="flex min-w-0 items-center gap-2.5">
-        <ModeStatusDot active={mode.active} />
-        <span className="block truncate font-display text-sm font-bold tracking-[-0.02em] text-foreground">
-          {mode.name}
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={isSelected}
+        data-selected={isSelected ? "true" : undefined}
+        data-testid={`mode-row-${mode.id}`}
+        className={cn(
+          "flex min-w-0 flex-1 items-center justify-between rounded-lg py-2.5 pl-3 pr-12 text-left outline-none",
+          "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50",
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <ModeStatusDot active={mode.active} />
+          <span className="block truncate font-display text-sm font-bold tracking-[-0.02em] text-foreground">
+            {mode.name}
+          </span>
+        </div>
 
-      <div className="flex items-center gap-2.5">
         <span
-          className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:inline-flex"
+          className="ml-2 hidden shrink-0 items-center gap-1 font-mono text-xs text-muted-foreground sm:inline-flex"
           title={`Maximum ${mode.max_players_per_match} players per match`}
           aria-label={`${mode.max_players_per_match} max players`}
         >
@@ -103,9 +105,41 @@ function GameModeListItem({
           />
           <span>{mode.max_players_per_match}</span>
         </span>
-        <ModeStatusBadge active={mode.active} />
-      </div>
-    </motion.button>
+      </button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Delete mode ${mode.name}`}
+        title={`Delete mode ${mode.name}`}
+        disabled={isDeletePending}
+        onClick={() => onRequestDeleteMode(mode)}
+        className="absolute right-1 top-1/2 -translate-y-1/2 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive focus-visible:ring-destructive/30"
+      >
+        <Trash2 aria-hidden="true" />
+      </Button>
+    </motion.div>
+  );
+}
+
+function GameModesAddButton({ onClick }: { onClick: () => void }) {
+  return (
+    <MotionConfig reducedMotion="user">
+      <RippleButton
+        type="button"
+        variant="default"
+        size="sm"
+        onClick={onClick}
+        className="h-8 gap-1.5 text-xs"
+        hoverScale={1.015}
+        tapScale={0.98}
+      >
+        <Plus aria-hidden="true" data-icon="inline-start" />
+        Add Mode
+        <RippleButtonRipples />
+      </RippleButton>
+    </MotionConfig>
   );
 }
 
@@ -269,6 +303,8 @@ export function GameModesDesktopLayout({
   details,
   onSelectMode,
   onAddMode,
+  onRequestDeleteMode,
+  isDeletePending,
 }: {
   modes: GameMode[];
   selectedMode: GameMode | null;
@@ -277,6 +313,8 @@ export function GameModesDesktopLayout({
   details: ModeDetailsPresentation;
   onSelectMode: (id: string) => void;
   onAddMode: () => void;
+  onRequestDeleteMode: (mode: GameMode) => void;
+  isDeletePending: boolean;
 }) {
   return (
     <div className="hidden lg:grid lg:grid-cols-12 lg:items-start lg:gap-6 xl:gap-8">
@@ -298,16 +336,7 @@ export function GameModesDesktopLayout({
             </span>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onAddMode}
-            className="h-8 gap-1.5 text-xs"
-          >
-            <Plus className="size-3.5" aria-hidden="true" />
-            Add Mode
-          </Button>
+          <GameModesAddButton onClick={onAddMode} />
         </div>
 
         <ul role="list" className="grid gap-2" aria-label="Desktop game modes list">
@@ -317,6 +346,8 @@ export function GameModesDesktopLayout({
                 mode={mode}
                 isSelected={mode.id === selectedModeId}
                 onSelect={() => onSelectMode(mode.id)}
+                onRequestDeleteMode={onRequestDeleteMode}
+                isDeletePending={isDeletePending}
                 prefersReducedMotion={prefersReducedMotion}
               />
             </li>
@@ -328,6 +359,8 @@ export function GameModesDesktopLayout({
         {selectedMode ? (
           <SelectedModePanel
             mode={selectedMode}
+            onRequestDeleteMode={onRequestDeleteMode}
+            isDeletePending={isDeletePending}
             configs={details.configs}
             isConfigsLoading={details.isConfigsLoading}
             isConfigsError={details.isConfigsError}
@@ -386,6 +419,8 @@ export function GameModesMobileLayout({
   onSelectMode,
   onBackToList,
   onAddMode,
+  onRequestDeleteMode,
+  isDeletePending,
 }: {
   modes: GameMode[];
   selectedMode: GameMode | null;
@@ -396,6 +431,8 @@ export function GameModesMobileLayout({
   onSelectMode: (id: string) => void;
   onBackToList: () => void;
   onAddMode: () => void;
+  onRequestDeleteMode: (mode: GameMode) => void;
+  isDeletePending: boolean;
 }) {
   return (
     <div className="relative overflow-hidden lg:hidden">
@@ -411,6 +448,8 @@ export function GameModesMobileLayout({
           >
             <SelectedModePanel
               mode={selectedMode}
+              onRequestDeleteMode={onRequestDeleteMode}
+              isDeletePending={isDeletePending}
               configs={details.configs}
               isConfigsLoading={details.isConfigsLoading}
               isConfigsError={details.isConfigsError}
@@ -445,6 +484,8 @@ export function GameModesMobileLayout({
               selectedModeId={listSelectedModeId}
               onSelectMode={onSelectMode}
               onAddMode={onAddMode}
+              onRequestDeleteMode={onRequestDeleteMode}
+              isDeletePending={isDeletePending}
               prefersReducedMotion={prefersReducedMotion}
             />
           </motion.div>
@@ -459,12 +500,16 @@ function CompactModeListMobile({
   selectedModeId,
   onSelectMode,
   onAddMode,
+  onRequestDeleteMode,
+  isDeletePending,
   prefersReducedMotion,
 }: {
   modes: GameMode[];
   selectedModeId: string | null;
   onSelectMode: (id: string) => void;
   onAddMode: () => void;
+  onRequestDeleteMode: (mode: GameMode) => void;
+  isDeletePending: boolean;
   prefersReducedMotion: boolean;
 }) {
   return (
@@ -482,16 +527,7 @@ function CompactModeListMobile({
           </span>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onAddMode}
-          className="h-8 gap-1.5 text-xs"
-        >
-          <Plus className="size-3.5" aria-hidden="true" />
-          Add Mode
-        </Button>
+        <GameModesAddButton onClick={onAddMode} />
       </div>
 
       <ul role="list" className="grid gap-2" aria-label="Game modes list">
@@ -501,6 +537,8 @@ function CompactModeListMobile({
               mode={mode}
               isSelected={mode.id === selectedModeId}
               onSelect={() => onSelectMode(mode.id)}
+              onRequestDeleteMode={onRequestDeleteMode}
+              isDeletePending={isDeletePending}
               prefersReducedMotion={prefersReducedMotion}
             />
           </li>

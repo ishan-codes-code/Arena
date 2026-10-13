@@ -4,12 +4,21 @@ import * as React from "react";
 import {
   Calendar,
   Clock,
+  EllipsisVertical,
   Layers,
   Pencil,
+  Trash2,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/animate-ui/components/radix/dropdown-menu";
 import {
   type GameMode,
   type ModeTeamConfiguration,
@@ -18,6 +27,8 @@ import { ModeTeamConfigurations } from "./mode-team-configurations";
 
 type SelectedModePanelProps = {
   mode: GameMode;
+  onRequestDeleteMode: (mode: GameMode) => void;
+  isDeletePending: boolean;
   /** Team configurations data - passed from parent to avoid duplicate queries */
   configs?: ModeTeamConfiguration[] | null;
   isConfigsLoading?: boolean;
@@ -89,6 +100,8 @@ function ModeSummaryCard({
 
 export function SelectedModePanel({
   mode,
+  onRequestDeleteMode,
+  isDeletePending,
   configs = null,
   isConfigsLoading = false,
   isConfigsError = false,
@@ -104,8 +117,8 @@ export function SelectedModePanel({
       )}
 
       {/* Selected Mode Header */}
-      <div className="flex flex-col gap-3 border-b border-border/70 pb-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5 min-w-0">
+      <div className="relative flex flex-col gap-3 border-b border-border/70 pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1.5 pr-10">
           <div className="flex flex-wrap items-center gap-2.5">
             <h3 className="font-display text-xl font-black tracking-[-0.03em] text-foreground sm:text-2xl">
               {mode.name}
@@ -124,18 +137,37 @@ export function SelectedModePanel({
           )}
         </div>
 
-        <div className="shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled
-            className="h-8 gap-1.5 text-xs text-muted-foreground"
-            title="Edit Mode modal will be available in an upcoming update"
-          >
-            <Pencil className="size-3.5" aria-hidden="true" />
-            Edit Mode
-          </Button>
+        <div className="absolute right-0 top-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`More actions for ${mode.name}`}
+                title={`More actions for ${mode.name}`}
+                disabled={isDeletePending}
+              >
+                <EllipsisVertical aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={4}>
+              <DropdownMenuGroup>
+                <DropdownMenuItem disabled>
+                  <Pencil aria-hidden="true" />
+                  Edit Mode
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={isDeletePending}
+                  onSelect={() => onRequestDeleteMode(mode)}
+                >
+                  <Trash2 aria-hidden="true" />
+                  Delete Mode
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

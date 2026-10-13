@@ -12,7 +12,6 @@ import {
 import { GameNotFoundError } from "./operations";
 import {
   createModeWithConfigurationsSchema,
-  createModeSchema,
   updateModeSchema,
   deleteModeSchema,
   getModeSchema,
@@ -131,18 +130,6 @@ export async function getMode(input: z.infer<typeof getModeSchema>) {
   return mode;
 }
 
-export async function createMode(input: z.infer<typeof createModeSchema>) {
-  try {
-    const [mode] = await db.insert(gameModes).values(input).returning();
-    return mode;
-  } catch (error) {
-    if (isModeSlugConflict(error)) {
-      throw new ModeSlugConflictError();
-    }
-    throw error;
-  }
-}
-
 export async function createModeWithConfigurations(
   input: z.infer<typeof createModeWithConfigurationsSchema>,
 ) {
@@ -256,42 +243,17 @@ export async function updateMode(input: z.infer<typeof updateModeSchema>) {
   }
 }
 
-/**
- * Deactivates a mode rather than hard-deleting it.
- *
- * Modes will eventually be referenced by tournament records. A hard delete
- * would break those references (even with ON DELETE CASCADE the historical
- * data would be lost). Setting active=false keeps the row and its
- * relationships intact while hiding it from normal Console lists.
- *
- * If the mode is already inactive this is a no-op (returns the current row).
- */
-export async function deactivateMode(input: z.infer<typeof deleteModeSchema>) {
-  const [mode] = await db
-    .select({ id: gameModes.id, active: gameModes.active })
-    .from(gameModes)
-    .where(eq(gameModes.id, input.id))
-    .limit(1);
-
-  if (!mode) {
-    throw new ModeNotFoundError();
-  }
-
-  if (!mode.active) {
-    return { id: mode.id };
-  }
-
-  const [updated] = await db
-    .update(gameModes)
-    .set({ active: false, updated_at: new Date() })
+export async function deleteMode(input: z.infer<typeof deleteModeSchema>) {
+  const [deleted] = await db
+    .delete(gameModes)
     .where(eq(gameModes.id, input.id))
     .returning({ id: gameModes.id });
 
-  if (!updated) {
+  if (!deleted) {
     throw new ModeNotFoundError();
   }
 
-  return updated;
+  return deleted;
 }
 
 // ---------------------------------------------------------------------------

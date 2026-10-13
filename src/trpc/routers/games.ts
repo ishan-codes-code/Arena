@@ -5,7 +5,6 @@ import {
   createGameSchema,
   deleteGameSchema,
   updateGameSchema,
-  createModeSchema,
   createModeWithConfigurationsSchema,
   updateModeSchema,
   deleteModeSchema,
@@ -27,10 +26,9 @@ import {
 import {
   listModes,
   getMode,
-  createMode,
   createModeWithConfigurations,
   updateMode,
-  deactivateMode,
+  deleteMode,
   listTeamConfigs,
   createTeamConfig,
   updateTeamConfig,
@@ -144,26 +142,6 @@ const modesRouter = createTRPCRouter({
     }
   }),
 
-  create: adminProcedure
-    .input(createModeSchema)
-    .mutation(async ({ input }) => {
-      try {
-        return await createMode(input);
-      } catch (error) {
-        if (error instanceof ModeSlugConflictError) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "A mode with this slug already exists for this game.",
-          });
-        }
-        console.error("Failed to create game mode.");
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create game mode.",
-        });
-      }
-    }),
-
   createWithConfigurations: adminProcedure
     .input(createModeWithConfigurationsSchema)
     .mutation(async ({ input }) => {
@@ -226,7 +204,7 @@ const modesRouter = createTRPCRouter({
     .input(deleteModeSchema)
     .mutation(async ({ input }) => {
       try {
-        return await deactivateMode(input);
+        return await deleteMode(input);
       } catch (error) {
         if (error instanceof ModeNotFoundError) {
           throw new TRPCError({
@@ -234,10 +212,10 @@ const modesRouter = createTRPCRouter({
             message: "The game mode was not found.",
           });
         }
-        console.error("Failed to deactivate game mode.");
+        console.error("Failed to delete game mode.");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to deactivate game mode.",
+          message: "Failed to delete game mode.",
         });
       }
     }),
