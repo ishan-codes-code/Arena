@@ -204,6 +204,7 @@ export function SelectedModePanel({
 
       {/* Team Configurations Section */}
       <ModeTeamConfigurations
+        key={mode.id}
         mode={mode}
         configs={configs}
         isConfigsLoading={isConfigsLoading}

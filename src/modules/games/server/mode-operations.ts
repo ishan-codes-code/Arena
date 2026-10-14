@@ -58,6 +58,13 @@ export class TeamConfigConflictError extends Error {
   }
 }
 
+export class TeamConfigMaxPlayersError extends Error {
+  constructor() {
+    super("The team size exceeds the maximum players per match for this mode.");
+    this.name = "TeamConfigMaxPlayersError";
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Postgres constraint helpers
 // ---------------------------------------------------------------------------
@@ -272,11 +279,32 @@ export async function listTeamConfigs(input: z.infer<typeof listTeamConfigsSchem
 
 export async function createTeamConfig(input: z.infer<typeof createTeamConfigSchema>) {
   try {
-    const [config] = await db
-      .insert(modeTeamConfigurations)
-      .values(input)
-      .returning();
-    return config;
+    return await db.transaction(async (tx) => {
+      const [mode] = await tx
+        .select({ max_players_per_match: gameModes.max_players_per_match })
+        .from(gameModes)
+        .where(eq(gameModes.id, input.mode_id))
+        .for("update");
+
+      if (!mode) {
+        throw new ModeNotFoundError();
+      }
+
+      if (input.team_size > mode.max_players_per_match) {
+        throw new TeamConfigMaxPlayersError();
+      }
+
+      const [config] = await tx
+        .insert(modeTeamConfigurations)
+        .values(input)
+        .returning();
+
+      if (!config) {
+        throw new Error("The team configuration insert returned no row.");
+      }
+
+      return config;
+    });
   } catch (error) {
     if (isTeamSizeConflict(error)) {
       throw new TeamConfigConflictError();

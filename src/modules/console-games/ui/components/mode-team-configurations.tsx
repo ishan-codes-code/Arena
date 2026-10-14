@@ -1,23 +1,63 @@
 "use client";
 
 import * as React from "react";
+import { useId, useState } from "react";
+import { useForm, type FieldErrors } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Layers,
+  LoaderCircle,
   Pencil,
   Plus,
   RotateCcw,
+  Save,
   Trash2,
   Users,
 } from "lucide-react";
+import { MotionConfig } from "motion/react";
+import { toast } from "sonner";
+import { z } from "zod";
+import { RippleButton, RippleButtonRipples } from "@/components/animate-ui/components/buttons/ripple";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SmoothInput } from "@/components/ui/skiper-ui/skiper106";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { createTeamConfigSchema } from "@/modules/games/schemas";
+import { AnimatedFieldError } from "./form-field-primitives";
 
 import type {
   GameMode,
   ModeTeamConfiguration,
 } from "@/modules/games/queries/modes";
+import { useTRPC } from "@/trpc/client";
+
+const inlineTeamConfigSchema = z.object({
+  name: createTeamConfigSchema.shape.name,
+  team_size: z
+    .string()
+    .trim()
+    .min(1, "Enter a team size.")
+    .regex(/^\d+$/, "Team size must be a whole number.")
+    .transform(Number)
+    .pipe(createTeamConfigSchema.shape.team_size),
+});
+
+type InlineTeamConfigInput = z.input<typeof inlineTeamConfigSchema>;
+type InlineTeamConfigValues = z.output<typeof inlineTeamConfigSchema>;
+
+const emptyInlineTeamConfig: InlineTeamConfigInput = {
+  name: "",
+  team_size: "",
+};
+
+const smoothInputWrapperClassName =
+  "w-full min-w-0 max-w-full rounded-md border border-input bg-background p-0 transition-colors focus-within:border-ring focus-within:outline-none focus-within:ring-3 focus-within:ring-ring/40";
+const smoothInputClassName =
+  "h-9 w-full min-w-0 px-2.5 text-sm text-foreground placeholder:text-muted-foreground";
 
 type ModeTeamConfigurationsProps = {
   mode: GameMode;
@@ -207,6 +247,100 @@ export function ModeTeamConfigurations({
   configsError,
   refetchConfigs,
 }: ModeTeamConfigurationsProps) {
+  const [isCreatingConfiguration, setIsCreatingConfiguration] = useState(false);
+  const inlineFormId = useId();
+  const nameFieldId = `${inlineFormId}-name`;
+  const teamSizeFieldId = `${inlineFormId}-team-size`;
+  const nameErrorId = `${nameFieldId}-error`;
+  const teamSizeErrorId = `${teamSizeFieldId}-error`;
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const form = useForm<InlineTeamConfigInput, undefined, InlineTeamConfigValues>({
+    resolver: zodResolver(inlineTeamConfigSchema),
+    defaultValues: emptyInlineTeamConfig,
+    mode: "onBlur",
+    reValidateMode: "onChange",
+  });
+  const createMutation = useMutation(
+    trpc.games.modes.configurations.create.mutationOptions({
+      onSuccess: async (configuration) => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.games.modes.configurations.list.queryKey({
+            mode_id: mode.id,
+          }),
+        });
+        toast.success("Configuration added", {
+          description: `${configuration.name} (${configuration.team_size}) is now available for ${mode.name}.`,
+        });
+        form.reset(emptyInlineTeamConfig);
+        setIsCreatingConfiguration(false);
+      },
+      onError: (error) => {
+        const code = error.data?.code;
+        let description: string;
+
+        if (code === "CONFLICT") {
+          description = "A configuration with this team size already exists for this mode.";
+          form.setError("team_size", {
+            type: "server",
+            message: "This team size already exists for this mode.",
+          });
+          requestAnimationFrame(() => form.setFocus("team_size"));
+        } else if (code === "BAD_REQUEST") {
+          description = `Team size must be a positive whole number no greater than ${mode.max_players_per_match}.`;
+          form.setError("team_size", {
+            type: "server",
+            message: `Maximum team size is ${mode.max_players_per_match}.`,
+          });
+          requestAnimationFrame(() => form.setFocus("team_size"));
+        } else if (code === "NOT_FOUND") {
+          description = "This game mode is no longer available. Refresh the modes list and try again.";
+        } else if (code === "UNAUTHORIZED") {
+          description = "You must be an admin to add configurations.";
+        } else if (code === "FORBIDDEN") {
+          description = "You don't have permission to add configurations.";
+        } else {
+          description = "We couldn't add this configuration. Please try again.";
+        }
+
+        toast.error("Could not add configuration", { description });
+      },
+    }),
+  );
+
+  const handleCreateConfiguration = (values: InlineTeamConfigValues) => {
+    if (createMutation.isPending) return;
+
+    if (values.team_size > mode.max_players_per_match) {
+      form.setError("team_size", {
+        type: "validate",
+        message: `Maximum team size is ${mode.max_players_per_match}.`,
+      });
+      requestAnimationFrame(() => form.setFocus("team_size"));
+      return;
+    }
+
+    createMutation.mutate({
+      mode_id: mode.id,
+      name: values.name.trim(),
+      team_size: values.team_size,
+    });
+  };
+
+  const handleInvalid = (errors: FieldErrors<InlineTeamConfigInput>) => {
+    if (errors.name) {
+      requestAnimationFrame(() => form.setFocus("name"));
+    } else if (errors.team_size) {
+      requestAnimationFrame(() => form.setFocus("team_size"));
+    }
+  };
+
+  const handleCancelCreation = () => {
+    if (createMutation.isPending) return;
+    form.reset(emptyInlineTeamConfig);
+    setIsCreatingConfiguration(false);
+  };
+
   return (
     <div className="space-y-4 pt-2">
       {/* Section Header */}
@@ -227,19 +361,29 @@ export function ModeTeamConfigurations({
           </p>
         </div>
 
-        <div>
-          <Button
+        <MotionConfig reducedMotion="user">
+          <RippleButton
             type="button"
-            variant="outline"
+            variant="default"
             size="sm"
-            disabled
-            className="h-8 gap-1.5 text-xs text-muted-foreground"
-            title="Add Configuration modal will be available in an upcoming update"
+            disabled={
+              configs === null ||
+              isConfigsLoading ||
+              isConfigsError ||
+              isCreatingConfiguration ||
+              createMutation.isPending
+            }
+            aria-expanded={isCreatingConfiguration}
+            className="h-8 gap-1.5 text-xs"
+            hoverScale={1.015}
+            tapScale={0.98}
+            onClick={() => setIsCreatingConfiguration(true)}
           >
-            <Plus className="size-3.5" aria-hidden="true" />
+            <Plus aria-hidden="true" data-icon="inline-start" />
             Add Configuration
-          </Button>
-        </div>
+            <RippleButtonRipples />
+          </RippleButton>
+        </MotionConfig>
       </div>
 
       {/* Content States */}
@@ -257,12 +401,17 @@ export function ModeTeamConfigurations({
           />
         )}
 
-        {!isConfigsLoading && !isConfigsError && configs !== null && configs.length === 0 && (
+        {!isConfigsLoading && !isConfigsError && configs !== null && configs.length === 0 && !isCreatingConfiguration && (
           <TeamConfigsEmptyState modeName={mode.name} />
         )}
 
-        {!isConfigsLoading && !isConfigsError && configs !== null && configs.length > 0 && (
-          <div className="overflow-hidden rounded-lg border border-border/70 bg-card/60 shadow-xs">
+        {!isConfigsLoading && !isConfigsError && configs !== null && (configs.length > 0 || isCreatingConfiguration) && (
+          <form
+            id={inlineFormId}
+            onSubmit={form.handleSubmit(handleCreateConfiguration, handleInvalid)}
+            noValidate
+            className="overflow-hidden rounded-lg border border-border/70 bg-card/60 shadow-xs"
+          >
             <Table aria-label={`${mode.name} team configurations`}>
               <TableHeader>
                 <TableRow className="border-border/60 hover:bg-transparent">
@@ -281,9 +430,119 @@ export function ModeTeamConfigurations({
                     index={index}
                   />
                 ))}
+                {isCreatingConfiguration && (
+                  <TableRow className="border-border/50 align-top hover:bg-transparent">
+                    <TableCell className="text-center font-mono text-xs text-muted-foreground">
+                      {configs.length + 1}
+                    </TableCell>
+                    <TableCell className="min-w-52 whitespace-normal">
+                      <Field
+                        data-invalid={form.formState.errors.name ? "true" : undefined}
+                        className="min-w-0 gap-1"
+                      >
+                        <FieldLabel htmlFor={nameFieldId} className="text-xs font-medium">
+                          Configuration Name
+                          <span aria-hidden="true" className="text-destructive">*</span>
+                          <span className="sr-only"> required</span>
+                        </FieldLabel>
+                        <SmoothInput
+                          {...form.register("name")}
+                          id={nameFieldId}
+                          form={inlineFormId}
+                          defaultValue=""
+                          required
+                          maxLength={80}
+                          placeholder="e.g. Trio"
+                          aria-required="true"
+                          aria-invalid={Boolean(form.formState.errors.name)}
+                          aria-describedby={form.formState.errors.name ? nameErrorId : undefined}
+                          wrapperClassName={cn(
+                            smoothInputWrapperClassName,
+                            form.formState.errors.name && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+                          )}
+                          className={smoothInputClassName}
+                          style={{ fontSize: 14 }}
+                        />
+                        <AnimatedFieldError
+                          id={nameErrorId}
+                          message={form.formState.errors.name?.message}
+                        />
+                      </Field>
+                    </TableCell>
+                    <TableCell className="min-w-36 whitespace-normal">
+                      <Field
+                        data-invalid={form.formState.errors.team_size ? "true" : undefined}
+                        className="min-w-0 gap-1"
+                      >
+                        <FieldLabel htmlFor={teamSizeFieldId} className="text-xs font-medium">
+                          Team Size
+                          <span aria-hidden="true" className="text-destructive">*</span>
+                          <span className="sr-only"> required</span>
+                        </FieldLabel>
+                        <SmoothInput
+                          {...form.register("team_size")}
+                          id={teamSizeFieldId}
+                          form={inlineFormId}
+                          defaultValue=""
+                          inputMode="numeric"
+                          required
+                          placeholder="e.g. 3"
+                          aria-required="true"
+                          aria-invalid={Boolean(form.formState.errors.team_size)}
+                          aria-describedby={form.formState.errors.team_size ? teamSizeErrorId : undefined}
+                          wrapperClassName={cn(
+                            smoothInputWrapperClassName,
+                            form.formState.errors.team_size && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+                          )}
+                          className={smoothInputClassName}
+                          style={{ fontSize: 14 }}
+                        />
+                        <AnimatedFieldError
+                          id={teamSizeErrorId}
+                          message={form.formState.errors.team_size?.message}
+                        />
+                      </Field>
+                    </TableCell>
+                    <TableCell className="hidden text-xs text-muted-foreground sm:table-cell">
+                      After save
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col justify-end gap-1 sm:flex-row">
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={createMutation.isPending}
+                          aria-busy={createMutation.isPending}
+                          className="whitespace-nowrap"
+                        >
+                          {createMutation.isPending ? (
+                            <>
+                              <LoaderCircle aria-hidden="true" data-icon="inline-start" className="animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save aria-hidden="true" data-icon="inline-start" />
+                              Save
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={createMutation.isPending}
+                          onClick={handleCancelCreation}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
-          </div>
+          </form>
         )}
       </div>
     </div>

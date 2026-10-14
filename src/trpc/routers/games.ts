@@ -35,6 +35,7 @@ import {
   deleteTeamConfig,
   ModeNotFoundError,
   ModeSlugConflictError,
+  TeamConfigMaxPlayersError,
   TeamConfigNotFoundError,
   TeamConfigConflictError,
 } from "@/modules/games/server/mode-operations";
@@ -54,10 +55,22 @@ const teamConfigurationsRouter = createTRPCRouter({
       try {
         return await createTeamConfig(input);
       } catch (error) {
+        if (error instanceof ModeNotFoundError) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "The game mode was not found.",
+          });
+        }
         if (error instanceof TeamConfigConflictError) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "A configuration with this team size already exists for this mode.",
+          });
+        }
+        if (error instanceof TeamConfigMaxPlayersError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Team size cannot exceed the maximum players per match for this mode.",
           });
         }
         console.error("Failed to create team configuration.");
