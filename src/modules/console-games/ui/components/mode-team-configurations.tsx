@@ -20,6 +20,17 @@ import { MotionConfig } from "motion/react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { RippleButton, RippleButtonRipples } from "@/components/animate-ui/components/buttons/ripple";
+import {
+  AlertDialog,
+  AlertDialogBackdrop,
+  AlertDialogClose,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogPopup,
+  AlertDialogPortal,
+  AlertDialogTitle,
+} from "@/components/animate-ui/primitives/base/alert-dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -186,9 +197,15 @@ function TeamConfigsErrorState({
 function ConfigRow({
   config,
   index,
+  isDeletePending,
+  isDeleting,
+  onDelete,
 }: {
   config: ModeTeamConfiguration;
   index: number;
+  isDeletePending: boolean;
+  isDeleting: boolean;
+  onDelete: () => void;
 }) {
   return (
     <TableRow className="border-border/50 transition-colors hover:bg-muted/30">
@@ -226,12 +243,18 @@ function ConfigRow({
             type="button"
             variant="ghost"
             size="icon-xs"
-            disabled
-            className="size-7 text-muted-foreground hover:text-destructive"
-            title="Delete configuration (coming soon)"
-            aria-label={`Delete ${config.name} configuration (coming soon)`}
+            disabled={isDeletePending}
+            aria-busy={isDeleting}
+            onClick={onDelete}
+            className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30"
+            title={`Delete ${config.name} configuration`}
+            aria-label={`Delete ${config.name} configuration`}
           >
-            <Trash2 className="size-3.5" aria-hidden="true" />
+            {isDeleting ? (
+              <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Trash2 className="size-3.5" aria-hidden="true" />
+            )}
           </Button>
         </div>
       </TableCell>
@@ -248,6 +271,8 @@ export function ModeTeamConfigurations({
   refetchConfigs,
 }: ModeTeamConfigurationsProps) {
   const [isCreatingConfiguration, setIsCreatingConfiguration] = useState(false);
+  const [configToDelete, setConfigToDelete] =
+    useState<ModeTeamConfiguration | null>(null);
   const inlineFormId = useId();
   const nameFieldId = `${inlineFormId}-name`;
   const teamSizeFieldId = `${inlineFormId}-team-size`;
@@ -307,6 +332,39 @@ export function ModeTeamConfigurations({
       },
     }),
   );
+
+  const deleteMutation = useMutation(
+    trpc.games.modes.configurations.delete.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.games.modes.configurations.list.queryKey({
+            mode_id: mode.id,
+          }),
+        });
+        toast.success("Configuration deleted", {
+          description: `${configToDelete?.name ?? "The configuration"} was permanently removed from ${mode.name}.`,
+        });
+        setConfigToDelete(null);
+      },
+      onError: (error) => {
+        const code = error.data?.code;
+        const description =
+          code === "NOT_FOUND"
+            ? "This configuration is no longer available. Refresh the mode and try again."
+            : code === "UNAUTHORIZED"
+              ? "You must be an admin to delete configurations."
+              : code === "FORBIDDEN"
+                ? "You don't have permission to delete configurations."
+                : "We couldn't delete this configuration. Please try again.";
+        toast.error("Could not delete configuration", { description });
+      },
+    }),
+  );
+
+  const handleConfirmDelete = () => {
+    if (!configToDelete || deleteMutation.isPending) return;
+    deleteMutation.mutate({ id: configToDelete.id });
+  };
 
   const handleCreateConfiguration = (values: InlineTeamConfigValues) => {
     if (createMutation.isPending) return;
@@ -428,6 +486,12 @@ export function ModeTeamConfigurations({
                     key={config.id}
                     config={config}
                     index={index}
+                    isDeletePending={deleteMutation.isPending}
+                    isDeleting={
+                      deleteMutation.isPending &&
+                      deleteMutation.variables?.id === config.id
+                    }
+                    onDelete={() => setConfigToDelete(config)}
                   />
                 ))}
                 {isCreatingConfiguration && (
@@ -545,6 +609,66 @@ export function ModeTeamConfigurations({
           </form>
         )}
       </div>
+
+      <AlertDialog
+        open={configToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setConfigToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogPortal>
+          <AlertDialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
+          <AlertDialogPopup className="fixed inset-0 z-50 m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col gap-5 overflow-y-auto border border-border bg-card p-6 text-card-foreground shadow-lg outline-none">
+            <AlertDialogHeader className="flex flex-col gap-2">
+              <AlertDialogTitle className="font-display text-xl font-bold">
+                Delete {configToDelete?.name ?? "team"} configuration?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm leading-6 text-muted-foreground">
+                This configuration will be permanently deleted from {mode.name}.
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <AlertDialogClose
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={deleteMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                }
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                aria-busy={deleteMutation.isPending}
+                onClick={handleConfirmDelete}
+              >
+                {deleteMutation.isPending ? (
+                  <>
+                    <LoaderCircle
+                      aria-hidden="true"
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 aria-hidden="true" data-icon="inline-start" />
+                    Delete Configuration
+                  </>
+                )}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogPopup>
+        </AlertDialogPortal>
+      </AlertDialog>
     </div>
   );
 }
