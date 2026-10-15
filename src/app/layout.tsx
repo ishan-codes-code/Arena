@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import NextTopLoader from "nextjs-toploader";
 import { ThemeProvider } from "./theme-provider";
 import { AppShell } from "@/app/app-shell";
 import { RouteTransition } from "@/components/route-transition";
@@ -39,6 +40,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <NextTopLoader
+          color="#D7263D"
+          height={2.5}
+          showSpinner={false}
+          crawl={true}
+          crawlSpeed={200}
+          initialPosition={0.08}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #D7263D,0 0 5px #D7263D"
+        />
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
             <Toaster />
