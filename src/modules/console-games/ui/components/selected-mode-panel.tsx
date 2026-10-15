@@ -28,6 +28,7 @@ import { ModeTeamConfigurations } from "./mode-team-configurations";
 type SelectedModePanelProps = {
   mode: GameMode;
   onRequestDeleteMode: (mode: GameMode) => void;
+  onRequestEditMode: (mode: GameMode) => void;
   isDeletePending: boolean;
   /** Team configurations data - passed from parent to avoid duplicate queries */
   configs?: ModeTeamConfiguration[] | null;
@@ -101,6 +102,7 @@ function ModeSummaryCard({
 export function SelectedModePanel({
   mode,
   onRequestDeleteMode,
+  onRequestEditMode,
   isDeletePending,
   configs = null,
   isConfigsLoading = false,
@@ -153,7 +155,7 @@ export function SelectedModePanel({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={4}>
               <DropdownMenuGroup>
-                <DropdownMenuItem disabled>
+                <DropdownMenuItem onSelect={() => onRequestEditMode(mode)}>
                   <Pencil aria-hidden="true" />
                   Edit Mode
                 </DropdownMenuItem>

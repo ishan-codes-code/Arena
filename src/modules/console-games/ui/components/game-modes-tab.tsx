@@ -27,6 +27,7 @@ import type { Game } from "@/modules/games/queries/games";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import { useTRPC } from "@/trpc/client";
 import { AddGameModeForm } from "./add-game-mode-form";
+import { EditGameModeForm } from "./edit-game-mode-form";
 import {
   GameModesDesktopLayout,
   GameModesEmptyState,
@@ -47,6 +48,8 @@ export function GameModesTab({ game }: GameModesTabProps) {
   const [mobileView, setMobileView] = React.useState<"list" | "details">("list");
   const [isAddModeOpen, setIsAddModeOpen] = React.useState(false);
   const [modeToDelete, setModeToDelete] =
+    React.useState<GameMode | null>(null);
+  const [modeToEdit, setModeToEdit] =
     React.useState<GameMode | null>(null);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -195,6 +198,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
         onSelectMode={setSelectedModeId}
         onAddMode={() => setIsAddModeOpen(true)}
         onRequestDeleteMode={setModeToDelete}
+        onRequestEditMode={setModeToEdit}
         isDeletePending={deleteMutation.isPending}
       />
 
@@ -212,6 +216,7 @@ export function GameModesTab({ game }: GameModesTabProps) {
         onBackToList={() => setMobileView("list")}
         onAddMode={() => setIsAddModeOpen(true)}
         onRequestDeleteMode={setModeToDelete}
+        onRequestEditMode={setModeToEdit}
         isDeletePending={deleteMutation.isPending}
       />
 
@@ -220,6 +225,18 @@ export function GameModesTab({ game }: GameModesTabProps) {
         open={isAddModeOpen}
         onOpenChange={setIsAddModeOpen}
       />
+
+      {modeToEdit && (
+        <EditGameModeForm
+          gameId={game.id}
+          mode={modeToEdit}
+          open={modeToEdit !== null}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) setModeToEdit(null);
+          }}
+          configs={displayedConfigs}
+        />
+      )}
 
       <AlertDialog
         open={modeToDelete !== null}

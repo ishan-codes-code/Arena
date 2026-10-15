@@ -304,6 +304,7 @@ export function GameModesDesktopLayout({
   onSelectMode,
   onAddMode,
   onRequestDeleteMode,
+  onRequestEditMode,
   isDeletePending,
 }: {
   modes: GameMode[];
@@ -314,6 +315,7 @@ export function GameModesDesktopLayout({
   onSelectMode: (id: string) => void;
   onAddMode: () => void;
   onRequestDeleteMode: (mode: GameMode) => void;
+  onRequestEditMode: (mode: GameMode) => void;
   isDeletePending: boolean;
 }) {
   return (
@@ -360,6 +362,7 @@ export function GameModesDesktopLayout({
           <SelectedModePanel
             mode={selectedMode}
             onRequestDeleteMode={onRequestDeleteMode}
+            onRequestEditMode={onRequestEditMode}
             isDeletePending={isDeletePending}
             configs={details.configs}
             isConfigsLoading={details.isConfigsLoading}
@@ -420,6 +423,7 @@ export function GameModesMobileLayout({
   onBackToList,
   onAddMode,
   onRequestDeleteMode,
+  onRequestEditMode,
   isDeletePending,
 }: {
   modes: GameMode[];
@@ -432,6 +436,7 @@ export function GameModesMobileLayout({
   onBackToList: () => void;
   onAddMode: () => void;
   onRequestDeleteMode: (mode: GameMode) => void;
+  onRequestEditMode: (mode: GameMode) => void;
   isDeletePending: boolean;
 }) {
   return (
@@ -449,6 +454,7 @@ export function GameModesMobileLayout({
             <SelectedModePanel
               mode={selectedMode}
               onRequestDeleteMode={onRequestDeleteMode}
+              onRequestEditMode={onRequestEditMode}
               isDeletePending={isDeletePending}
               configs={details.configs}
               isConfigsLoading={details.isConfigsLoading}
