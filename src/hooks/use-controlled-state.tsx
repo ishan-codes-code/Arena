@@ -23,10 +23,18 @@ export function useControlledState<T, Rest extends any[] = []>(
 
   const setState = React.useCallback(
     (next: T, ...args: Rest) => {
-      setInternalState(next);
-      onChange?.(next, ...args);
+      if (value !== undefined) {
+        // Controlled: notify the parent only. The internal state syncs via the
+        // effect below when the parent updates the `value` prop, so a rejected
+        // close (parent declines to change `value`) leaves internal state and
+        // the portal/preview untouched.
+        onChange?.(next, ...args);
+      } else {
+        setInternalState(next);
+        onChange?.(next, ...args);
+      }
     },
-    [onChange],
+    [value, onChange],
   );
 
   return [state, setState] as const;

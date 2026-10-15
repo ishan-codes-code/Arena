@@ -79,6 +79,13 @@ ownership. The current Arena implementation establishes these domains:
 
 - `auth`
 - `games`
+- `console-games`
+
+`games` owns canonical Game domain data/schemas, queries, and the public Arena
+game presentation and discovery UI (`/games`).
+`console-games` owns administrative Console game management UI (`/console/games`),
+including catalog tables, game creation and editing dialogs, and inline controls,
+serving as the clear home for future console game details and mode configuration.
 
 Domain-specific behavior and UI belong with their owning module. Modules may
 have different internal structures: add folders and files when the actual

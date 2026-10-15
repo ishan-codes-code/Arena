@@ -8,6 +8,7 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import Image from "next/image";
+import Link from "next/link";
 import { Calendar, Gamepad2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,7 +46,14 @@ const columns: ColumnDef<Features, Game>[] = [
             </div>
           )}
           <div>
-            <div className="font-medium">{game.name}</div>
+            <div className="font-medium">
+              <Link
+                href={`/console/games/${game.slug}`}
+                className="transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xs"
+              >
+                {game.name}
+              </Link>
+            </div>
             {game.short_name && (
               <div className="text-xs text-muted-foreground">{game.short_name}</div>
             )}
