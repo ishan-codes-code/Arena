@@ -99,6 +99,12 @@ const teamConfigurationsRouter = createTRPCRouter({
             message: "A configuration with this team size already exists for this mode.",
           });
         }
+        if (error instanceof TeamConfigMaxPlayersError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Team size cannot exceed the maximum players per match for this mode.",
+          });
+        }
         console.error("Failed to update team configuration.");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

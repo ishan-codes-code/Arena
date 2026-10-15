@@ -328,6 +328,22 @@ export async function updateTeamConfig(input: z.infer<typeof updateTeamConfigSch
         throw new TeamConfigNotFoundError();
       }
 
+      if (fields.team_size !== undefined) {
+        const [mode] = await tx
+          .select({ max_players_per_match: gameModes.max_players_per_match })
+          .from(gameModes)
+          .where(eq(gameModes.id, current.mode_id))
+          .for("update");
+
+        if (!mode) {
+          throw new ModeNotFoundError();
+        }
+
+        if (fields.team_size > mode.max_players_per_match) {
+          throw new TeamConfigMaxPlayersError();
+        }
+      }
+
       const updateValues: Partial<NewModeTeamConfiguration> = {
         ...(fields.name !== undefined &&
           fields.name !== current.name && { name: fields.name }),

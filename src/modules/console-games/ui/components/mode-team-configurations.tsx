@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useId, useState } from "react";
-import { useForm, type FieldErrors } from "react-hook-form";
+import { useForm, type FieldErrors, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -59,6 +59,11 @@ const inlineTeamConfigSchema = z.object({
 
 type InlineTeamConfigInput = z.input<typeof inlineTeamConfigSchema>;
 type InlineTeamConfigValues = z.output<typeof inlineTeamConfigSchema>;
+type InlineTeamConfigForm = UseFormReturn<
+  InlineTeamConfigInput,
+  undefined,
+  InlineTeamConfigValues
+>;
 
 const emptyInlineTeamConfig: InlineTeamConfigInput = {
   name: "",
@@ -197,65 +202,192 @@ function TeamConfigsErrorState({
 function ConfigRow({
   config,
   index,
+  form,
+  isEditing,
+  isEditingDirty,
+  isAnyMutationPending,
+  isUpdatePending,
   isDeletePending,
   isDeleting,
+  onStartEditing,
+  onCancelEditing,
   onDelete,
 }: {
   config: ModeTeamConfiguration;
   index: number;
+  form: InlineTeamConfigForm;
+  isEditing: boolean;
+  isEditingDirty: boolean;
+  isAnyMutationPending: boolean;
+  isUpdatePending: boolean;
   isDeletePending: boolean;
   isDeleting: boolean;
+  onStartEditing: () => void;
+  onCancelEditing: () => void;
   onDelete: () => void;
 }) {
+  const nameFieldId = `team-config-edit-name-${config.id}`;
+  const teamSizeFieldId = `team-config-edit-size-${config.id}`;
+  const nameErrorId = `${nameFieldId}-error`;
+  const teamSizeErrorId = `${teamSizeFieldId}-error`;
+  const nameError = form.formState.errors.name?.message;
+  const teamSizeError = form.formState.errors.team_size?.message;
+
   return (
     <TableRow className="border-border/50 transition-colors hover:bg-muted/30">
       <TableCell className="text-center font-mono text-xs text-muted-foreground">
         {index + 1}
       </TableCell>
-      <TableCell>
-        <div className="font-medium text-foreground">{config.name}</div>
-      </TableCell>
-      <TableCell>
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-mono text-xs text-foreground/90">
-          <Users className="size-3 text-muted-foreground" aria-hidden="true" />
-          <span>
-            {config.team_size} {config.team_size === 1 ? "player" : "players"}
-          </span>
-        </span>
-      </TableCell>
+      {isEditing ? (
+        <>
+          <TableCell className="min-w-52 whitespace-normal">
+            <Field
+              data-invalid={nameError ? "true" : undefined}
+              className="min-w-0 gap-1"
+            >
+              <FieldLabel htmlFor={nameFieldId} className="text-xs font-medium">
+                Configuration Name
+                <span aria-hidden="true" className="text-destructive">*</span>
+                <span className="sr-only"> required</span>
+              </FieldLabel>
+              <SmoothInput
+                {...form.register("name")}
+                id={nameFieldId}
+                defaultValue={config.name}
+                required
+                disabled={isUpdatePending}
+                maxLength={80}
+                aria-required="true"
+                aria-invalid={Boolean(nameError)}
+                aria-describedby={nameError ? nameErrorId : undefined}
+                wrapperClassName={cn(
+                  smoothInputWrapperClassName,
+                  nameError && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+                )}
+                className={smoothInputClassName}
+                style={{ fontSize: 14 }}
+              />
+              <AnimatedFieldError id={nameErrorId} message={nameError} />
+            </Field>
+          </TableCell>
+          <TableCell className="min-w-36 whitespace-normal">
+            <Field
+              data-invalid={teamSizeError ? "true" : undefined}
+              className="min-w-0 gap-1"
+            >
+              <FieldLabel htmlFor={teamSizeFieldId} className="text-xs font-medium">
+                Team Size
+                <span aria-hidden="true" className="text-destructive">*</span>
+                <span className="sr-only"> required</span>
+              </FieldLabel>
+              <SmoothInput
+                {...form.register("team_size")}
+                id={teamSizeFieldId}
+                defaultValue={String(config.team_size)}
+                inputMode="numeric"
+                required
+                disabled={isUpdatePending}
+                aria-required="true"
+                aria-invalid={Boolean(teamSizeError)}
+                aria-describedby={teamSizeError ? teamSizeErrorId : undefined}
+                wrapperClassName={cn(
+                  smoothInputWrapperClassName,
+                  teamSizeError && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+                )}
+                className={smoothInputClassName}
+                style={{ fontSize: 14 }}
+              />
+              <AnimatedFieldError id={teamSizeErrorId} message={teamSizeError} />
+            </Field>
+          </TableCell>
+        </>
+      ) : (
+        <>
+          <TableCell>
+            <div className="font-medium text-foreground">{config.name}</div>
+          </TableCell>
+          <TableCell>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-mono text-xs text-foreground/90">
+              <Users className="size-3 text-muted-foreground" aria-hidden="true" />
+              <span>
+                {config.team_size} {config.team_size === 1 ? "player" : "players"}
+              </span>
+            </span>
+          </TableCell>
+        </>
+      )}
       <TableCell className="hidden font-mono text-xs text-muted-foreground sm:table-cell">
         {formatDate(config.created_at)}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            disabled
-            className="size-7 text-muted-foreground"
-            title="Edit configuration (coming soon)"
-            aria-label={`Edit ${config.name} configuration (coming soon)`}
-          >
-            <Pencil className="size-3.5" aria-hidden="true" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            disabled={isDeletePending}
-            aria-busy={isDeleting}
-            onClick={onDelete}
-            className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30"
-            title={`Delete ${config.name} configuration`}
-            aria-label={`Delete ${config.name} configuration`}
-          >
-            {isDeleting ? (
-              <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
-            ) : (
-              <Trash2 className="size-3.5" aria-hidden="true" />
-            )}
-          </Button>
+          {isEditing ? (
+            <>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isUpdatePending || !isEditingDirty}
+                aria-busy={isUpdatePending}
+                className="whitespace-nowrap"
+              >
+                {isUpdatePending ? (
+                  <>
+                    <LoaderCircle aria-hidden="true" data-icon="inline-start" className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save aria-hidden="true" data-icon="inline-start" />
+                    Save
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isUpdatePending}
+                onClick={onCancelEditing}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                disabled={isAnyMutationPending}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onStartEditing();
+                }}
+                className="size-7 text-muted-foreground"
+                title={`Edit ${config.name} configuration`}
+                aria-label={`Edit ${config.name} configuration`}
+              >
+                <Pencil className="size-3.5" aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                disabled={isDeletePending || isAnyMutationPending}
+                aria-busy={isDeleting}
+                onClick={onDelete}
+                className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30"
+                title={`Delete ${config.name} configuration`}
+                aria-label={`Delete ${config.name} configuration`}
+              >
+                {isDeleting ? (
+                  <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="size-3.5" aria-hidden="true" />
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </TableCell>
     </TableRow>
@@ -271,6 +403,8 @@ export function ModeTeamConfigurations({
   refetchConfigs,
 }: ModeTeamConfigurationsProps) {
   const [isCreatingConfiguration, setIsCreatingConfiguration] = useState(false);
+  const [editingConfiguration, setEditingConfiguration] =
+    useState<ModeTeamConfiguration | null>(null);
   const [configToDelete, setConfigToDelete] =
     useState<ModeTeamConfiguration | null>(null);
   const inlineFormId = useId();
@@ -286,6 +420,7 @@ export function ModeTeamConfigurations({
     mode: "onBlur",
     reValidateMode: "onChange",
   });
+  const isFormDirty = form.formState.isDirty;
   const createMutation = useMutation(
     trpc.games.modes.configurations.create.mutationOptions({
       onSuccess: async (configuration) => {
@@ -329,6 +464,53 @@ export function ModeTeamConfigurations({
         }
 
         toast.error("Could not add configuration", { description });
+      },
+    }),
+  );
+
+  const updateMutation = useMutation(
+    trpc.games.modes.configurations.update.mutationOptions({
+      onSuccess: async (configuration) => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.games.modes.configurations.list.queryKey({
+            mode_id: mode.id,
+          }),
+        });
+        toast.success("Configuration updated", {
+          description: `${configuration.name} was updated for ${mode.name}.`,
+        });
+        form.reset(emptyInlineTeamConfig);
+        setEditingConfiguration(null);
+      },
+      onError: (error) => {
+        const code = error.data?.code;
+        let description: string;
+
+        if (code === "CONFLICT") {
+          description = "A configuration with this team size already exists for this mode.";
+          form.setError("team_size", {
+            type: "server",
+            message: "This team size already exists for this mode.",
+          });
+          requestAnimationFrame(() => form.setFocus("team_size"));
+        } else if (code === "BAD_REQUEST") {
+          description = `Team size cannot exceed ${mode.max_players_per_match} for this mode.`;
+          form.setError("team_size", {
+            type: "server",
+            message: `Maximum team size is ${mode.max_players_per_match}.`,
+          });
+          requestAnimationFrame(() => form.setFocus("team_size"));
+        } else if (code === "NOT_FOUND") {
+          description = "This configuration is no longer available. Refresh the mode and try again.";
+        } else if (code === "UNAUTHORIZED") {
+          description = "You must be an admin to update configurations.";
+        } else if (code === "FORBIDDEN") {
+          description = "You don't have permission to update configurations.";
+        } else {
+          description = "We couldn't update this configuration. Please try again.";
+        }
+
+        toast.error("Could not update configuration", { description });
       },
     }),
   );
@@ -385,6 +567,69 @@ export function ModeTeamConfigurations({
     });
   };
 
+  const handleStartEditing = (configuration: ModeTeamConfiguration) => {
+    if (
+      isCreatingConfiguration ||
+      createMutation.isPending ||
+      updateMutation.isPending ||
+      deleteMutation.isPending
+    ) {
+      return;
+    }
+
+    form.reset({
+      name: configuration.name,
+      team_size: String(configuration.team_size),
+    });
+    setEditingConfiguration(configuration);
+    requestAnimationFrame(() => form.setFocus("name"));
+  };
+
+  const handleUpdateConfiguration = (values: InlineTeamConfigValues) => {
+    if (!editingConfiguration || updateMutation.isPending) return;
+
+    if (values.team_size > mode.max_players_per_match) {
+      form.setError("team_size", {
+        type: "validate",
+        message: `Maximum team size is ${mode.max_players_per_match}.`,
+      });
+      requestAnimationFrame(() => form.setFocus("team_size"));
+      return;
+    }
+
+    const changedFields: {
+      id: string;
+      name?: string;
+      team_size?: number;
+    } = { id: editingConfiguration.id };
+
+    const normalizedName = values.name.trim();
+    if (normalizedName !== editingConfiguration.name) {
+      changedFields.name = normalizedName;
+    }
+    if (values.team_size !== editingConfiguration.team_size) {
+      changedFields.team_size = values.team_size;
+    }
+
+    if (changedFields.name === undefined && changedFields.team_size === undefined) {
+      form.reset({
+        name: editingConfiguration.name,
+        team_size: String(editingConfiguration.team_size),
+      });
+      return;
+    }
+
+    updateMutation.mutate(changedFields);
+  };
+
+  const handleSaveConfiguration = (values: InlineTeamConfigValues) => {
+    if (editingConfiguration) {
+      handleUpdateConfiguration(values);
+      return;
+    }
+    handleCreateConfiguration(values);
+  };
+
   const handleInvalid = (errors: FieldErrors<InlineTeamConfigInput>) => {
     if (errors.name) {
       requestAnimationFrame(() => form.setFocus("name"));
@@ -397,6 +642,12 @@ export function ModeTeamConfigurations({
     if (createMutation.isPending) return;
     form.reset(emptyInlineTeamConfig);
     setIsCreatingConfiguration(false);
+  };
+
+  const handleCancelEditing = () => {
+    if (updateMutation.isPending) return;
+    form.reset(emptyInlineTeamConfig);
+    setEditingConfiguration(null);
   };
 
   return (
@@ -429,7 +680,10 @@ export function ModeTeamConfigurations({
               isConfigsLoading ||
               isConfigsError ||
               isCreatingConfiguration ||
-              createMutation.isPending
+              editingConfiguration !== null ||
+              createMutation.isPending ||
+              updateMutation.isPending ||
+              deleteMutation.isPending
             }
             aria-expanded={isCreatingConfiguration}
             className="h-8 gap-1.5 text-xs"
@@ -466,7 +720,7 @@ export function ModeTeamConfigurations({
         {!isConfigsLoading && !isConfigsError && configs !== null && (configs.length > 0 || isCreatingConfiguration) && (
           <form
             id={inlineFormId}
-            onSubmit={form.handleSubmit(handleCreateConfiguration, handleInvalid)}
+            onSubmit={form.handleSubmit(handleSaveConfiguration, handleInvalid)}
             noValidate
             className="overflow-hidden rounded-lg border border-border/70 bg-card/60 shadow-xs"
           >
@@ -486,7 +740,20 @@ export function ModeTeamConfigurations({
                     key={config.id}
                     config={config}
                     index={index}
+                    form={form}
+                    isEditing={editingConfiguration?.id === config.id}
+                    isEditingDirty={isFormDirty}
+                    isAnyMutationPending={
+                      isCreatingConfiguration ||
+                      editingConfiguration !== null ||
+                      createMutation.isPending ||
+                      updateMutation.isPending ||
+                      deleteMutation.isPending
+                    }
+                    isUpdatePending={updateMutation.isPending}
                     isDeletePending={deleteMutation.isPending}
+                    onStartEditing={() => handleStartEditing(config)}
+                    onCancelEditing={handleCancelEditing}
                     isDeleting={
                       deleteMutation.isPending &&
                       deleteMutation.variables?.id === config.id
