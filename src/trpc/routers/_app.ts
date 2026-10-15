@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { baseProcedure, createTRPCRouter } from "../init";
 import { gamesRouter } from "./games";
+import { profileRouter } from "./profile";
 
 export const appRouter = createTRPCRouter({
   hello: baseProcedure
@@ -11,6 +12,7 @@ export const appRouter = createTRPCRouter({
       };
     }),
   games: gamesRouter,
+  profile: profileRouter,
 });
 
 // Export type router type
