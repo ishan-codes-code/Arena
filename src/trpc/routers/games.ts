@@ -35,6 +35,7 @@ import {
   deleteTeamConfig,
   ModeNotFoundError,
   ModeSlugConflictError,
+  ModeMaxPlayersConstraintError,
   TeamConfigMaxPlayersError,
   TeamConfigNotFoundError,
   TeamConfigConflictError,
@@ -209,6 +210,14 @@ const modesRouter = createTRPCRouter({
           throw new TRPCError({
             code: "CONFLICT",
             message: "A mode with this slug already exists for this game.",
+          });
+        }
+        if (error instanceof ModeMaxPlayersConstraintError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              error.message ||
+              "Maximum players per match cannot be less than an existing team configuration's team size.",
           });
         }
         console.error("Failed to update game mode.");

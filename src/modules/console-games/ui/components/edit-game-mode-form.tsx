@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -85,11 +85,21 @@ export function EditGameModeForm({
 
   const { formState: { isDirty }, reset } = form;
 
-  // Reset with the latest mode values whenever the dialog opens or the mode changes.
+  const prevOpenRef = useRef(false);
+  const prevModeIdRef = useRef<string | null>(null);
+
+  // Initialize form on dialog open or when switching to a different mode.
+  // Refetches of the same mode (identical mode.id) while the dialog is open will not wipe in-progress edits.
   useEffect(() => {
-    if (open) {
+    const isOpening = open && !prevOpenRef.current;
+    const isModeChanged = mode.id !== prevModeIdRef.current;
+
+    if (open && (isOpening || isModeChanged)) {
       reset(modeToFormInput(mode));
+      prevModeIdRef.current = mode.id;
     }
+
+    prevOpenRef.current = open;
   }, [open, mode, reset]);
 
   const resetForm = () => {
@@ -117,15 +127,28 @@ export function EditGameModeForm({
       onError: (error) => {
         const code = error.data?.code;
         const description =
-          code === "CONFLICT"
-            ? "A mode with that slug already exists. Update the mode name and try again."
-            : code === "NOT_FOUND"
-              ? "This game mode no longer exists. Refresh the modes list and try again."
-              : code === "UNAUTHORIZED"
-                ? "You must be an admin to edit game modes."
-                : code === "FORBIDDEN"
-                  ? "You don't have permission to edit game modes."
-                  : "We couldn't save the game mode. Please try again.";
+          code === "BAD_REQUEST"
+            ? error.message ||
+              "Maximum players per match cannot be less than an existing team configuration's team size."
+            : code === "CONFLICT"
+              ? "A mode with that slug already exists. Update the mode name and try again."
+              : code === "NOT_FOUND"
+                ? "This game mode no longer exists. Refresh the modes list and try again."
+                : code === "UNAUTHORIZED"
+                  ? "You must be an admin to edit game modes."
+                  : code === "FORBIDDEN"
+                    ? "You don't have permission to edit game modes."
+                    : error.message || "We couldn't save the game mode. Please try again.";
+
+        if (code === "BAD_REQUEST") {
+          form.setError("max_players_per_match", {
+            type: "server",
+            message:
+              error.message ||
+              "Cannot be less than an existing team configuration's team size.",
+          });
+          requestAnimationFrame(() => form.setFocus("max_players_per_match"));
+        }
 
         toast.error("Failed to save game mode", { description });
       },
@@ -200,8 +223,8 @@ export function EditGameModeForm({
   };
 
   // Warn when the user has entered a max players value lower than the largest
-  // existing team configuration size.  This is a client-side hint; the server
-  // enforces the real invariant on updateTeamConfig, not updateMode.
+  // existing team configuration size. This serves as an early client-side UX safeguard;
+  // the server also enforces this invariant inside the updateMode transaction.
   const currentMaxPlayers = Number(form.watch("max_players_per_match"));
   const largestConfigSize = configs
     ? Math.max(0, ...configs.map((c) => c.team_size))

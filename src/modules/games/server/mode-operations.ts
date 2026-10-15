@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import type { z } from "zod";
 
 import { db } from "@/lib/db";
@@ -37,6 +37,15 @@ export class ModeSlugConflictError extends Error {
   constructor() {
     super("A mode with this slug already exists for this game.");
     this.name = "ModeSlugConflictError";
+  }
+}
+
+export class ModeMaxPlayersConstraintError extends Error {
+  constructor(
+    message = "Maximum players per match cannot be less than an existing team configuration's team size.",
+  ) {
+    super(message);
+    this.name = "ModeMaxPlayersConstraintError";
   }
 }
 
@@ -209,6 +218,32 @@ export async function updateMode(input: z.infer<typeof updateModeSchema>) {
 
       if (!current) {
         throw new ModeNotFoundError();
+      }
+
+      if (
+        fields.max_players_per_match !== undefined &&
+        fields.max_players_per_match !== current.max_players_per_match
+      ) {
+        const [conflictingConfig] = await tx
+          .select({
+            id: modeTeamConfigurations.id,
+            team_size: modeTeamConfigurations.team_size,
+          })
+          .from(modeTeamConfigurations)
+          .where(
+            and(
+              eq(modeTeamConfigurations.mode_id, id),
+              gt(modeTeamConfigurations.team_size, fields.max_players_per_match),
+            ),
+          )
+          .for("update")
+          .limit(1);
+
+        if (conflictingConfig) {
+          throw new ModeMaxPlayersConstraintError(
+            `Maximum players per match (${fields.max_players_per_match}) cannot be less than existing team configuration size (${conflictingConfig.team_size}).`,
+          );
+        }
       }
 
       const updateValues: Partial<NewGameMode> = {
