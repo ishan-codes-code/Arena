@@ -196,6 +196,24 @@ export const createTeamConfigSchema = z.strictObject({
     .min(1, "Team size must be at least 1."),
 });
 
+export const createModeWithConfigurationsSchema = createModeSchema
+  .extend({
+    team_configurations: z
+      .array(createTeamConfigSchema.omit({ mode_id: true }))
+      .min(1, "At least one team configuration is required."),
+  })
+  .superRefine((input, ctx) => {
+    input.team_configurations.forEach((configuration, index) => {
+      if (configuration.team_size > input.max_players_per_match) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Team size cannot exceed maximum players (${input.max_players_per_match}).`,
+          path: ["team_configurations", index, "team_size"],
+        });
+      }
+    });
+  });
+
 export const updateTeamConfigSchema = z
   .object({
     id: z.string().uuid(),

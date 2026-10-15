@@ -5,7 +5,7 @@ import {
   createGameSchema,
   deleteGameSchema,
   updateGameSchema,
-  createModeSchema,
+  createModeWithConfigurationsSchema,
   updateModeSchema,
   deleteModeSchema,
   getModeSchema,
@@ -26,15 +26,17 @@ import {
 import {
   listModes,
   getMode,
-  createMode,
+  createModeWithConfigurations,
   updateMode,
-  deactivateMode,
+  deleteMode,
   listTeamConfigs,
   createTeamConfig,
   updateTeamConfig,
   deleteTeamConfig,
   ModeNotFoundError,
   ModeSlugConflictError,
+  ModeMaxPlayersConstraintError,
+  TeamConfigMaxPlayersError,
   TeamConfigNotFoundError,
   TeamConfigConflictError,
 } from "@/modules/games/server/mode-operations";
@@ -54,10 +56,22 @@ const teamConfigurationsRouter = createTRPCRouter({
       try {
         return await createTeamConfig(input);
       } catch (error) {
+        if (error instanceof ModeNotFoundError) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "The game mode was not found.",
+          });
+        }
         if (error instanceof TeamConfigConflictError) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "A configuration with this team size already exists for this mode.",
+          });
+        }
+        if (error instanceof TeamConfigMaxPlayersError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Team size cannot exceed the maximum players per match for this mode.",
           });
         }
         console.error("Failed to create team configuration.");
@@ -84,6 +98,12 @@ const teamConfigurationsRouter = createTRPCRouter({
           throw new TRPCError({
             code: "CONFLICT",
             message: "A configuration with this team size already exists for this mode.",
+          });
+        }
+        if (error instanceof TeamConfigMaxPlayersError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Team size cannot exceed the maximum players per match for this mode.",
           });
         }
         console.error("Failed to update team configuration.");
@@ -142,22 +162,34 @@ const modesRouter = createTRPCRouter({
     }
   }),
 
-  create: adminProcedure
-    .input(createModeSchema)
+  createWithConfigurations: adminProcedure
+    .input(createModeWithConfigurationsSchema)
     .mutation(async ({ input }) => {
       try {
-        return await createMode(input);
+        return await createModeWithConfigurations(input);
       } catch (error) {
+        if (error instanceof GameNotFoundError) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "The parent game was not found.",
+          });
+        }
         if (error instanceof ModeSlugConflictError) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "A mode with this slug already exists for this game.",
           });
         }
-        console.error("Failed to create game mode.");
+        if (error instanceof TeamConfigConflictError) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "A configuration with this team size already exists for this mode.",
+          });
+        }
+        console.error("Failed to create game mode with team configurations.");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create game mode.",
+          message: "Failed to create game mode with team configurations.",
         });
       }
     }),
@@ -180,6 +212,14 @@ const modesRouter = createTRPCRouter({
             message: "A mode with this slug already exists for this game.",
           });
         }
+        if (error instanceof ModeMaxPlayersConstraintError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              error.message ||
+              "Maximum players per match cannot be less than an existing team configuration's team size.",
+          });
+        }
         console.error("Failed to update game mode.");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -192,7 +232,7 @@ const modesRouter = createTRPCRouter({
     .input(deleteModeSchema)
     .mutation(async ({ input }) => {
       try {
-        return await deactivateMode(input);
+        return await deleteMode(input);
       } catch (error) {
         if (error instanceof ModeNotFoundError) {
           throw new TRPCError({
@@ -200,10 +240,10 @@ const modesRouter = createTRPCRouter({
             message: "The game mode was not found.",
           });
         }
-        console.error("Failed to deactivate game mode.");
+        console.error("Failed to delete game mode.");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to deactivate game mode.",
+          message: "Failed to delete game mode.",
         });
       }
     }),

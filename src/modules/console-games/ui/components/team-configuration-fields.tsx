@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { AnimatedFieldError } from "./game-mode-form-fields";
+import { AnimatedFieldError } from "./form-field-primitives";
 import type { GameModeForm } from "./game-mode-form-fields";
 
 export function TeamConfigurationFields({ form }: { form: GameModeForm }) {

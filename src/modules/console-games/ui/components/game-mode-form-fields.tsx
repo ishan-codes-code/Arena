@@ -1,6 +1,5 @@
 "use client";
 
-import { type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Controller,
@@ -20,7 +19,9 @@ import { SmoothInput } from "@/components/ui/skiper-ui/skiper106";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { slugify, type AddGameModeInput, type AddGameModeValues } from "./add-game-mode-schema";
+import { slugify } from "@/modules/console-games/lib/slugify";
+import type { AddGameModeInput, AddGameModeValues } from "./add-game-mode-schema";
+import { FieldFrame } from "./form-field-primitives";
 
 export type GameModeForm = UseFormReturn<AddGameModeInput, undefined, AddGameModeValues>;
 
@@ -28,87 +29,6 @@ const controlWrapperClassName =
   "w-full min-w-0 max-w-full rounded-md border border-input bg-background p-0 transition-colors focus-within:border-ring focus-within:outline-none focus-within:ring-3 focus-within:ring-ring/40";
 const controlClassName =
   "h-10 w-full min-w-0 max-w-full px-3 text-sm text-foreground placeholder:text-muted-foreground";
-
-type FieldControlIds = {
-  describedBy?: string;
-  errorId: string;
-};
-
-type FieldFrameProps = {
-  id: string;
-  label: string;
-  required?: boolean;
-  description?: string;
-  error?: string;
-  control: (ids: FieldControlIds) => ReactNode;
-  afterControl?: ReactNode;
-};
-
-export function AnimatedFieldError({ id, message }: { id: string; message?: string }) {
-  return (
-    <div className="min-h-5" aria-live="polite">
-      <AnimatePresence initial={false} mode="wait">
-        {message && (
-          <motion.div
-            key={message}
-            initial={{ opacity: 0, y: 3 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -2 }}
-            transition={{ duration: 0.16 }}
-          >
-            <FieldError id={id} className="min-w-0 max-w-full break-words">
-              {message}
-            </FieldError>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-export function FieldFrame({
-  id,
-  label,
-  required = false,
-  description,
-  error,
-  control,
-  afterControl,
-}: FieldFrameProps) {
-  const descriptionId = description ? `${id}-description` : undefined;
-  const errorId = `${id}-error`;
-  const describedBy = [descriptionId, error ? errorId : undefined]
-    .filter((value): value is string => Boolean(value))
-    .join(" ");
-
-  return (
-    <Field
-      data-invalid={error ? "true" : undefined}
-      className="w-full min-w-0 max-w-full gap-1.5"
-    >
-      <FieldLabel htmlFor={id}>
-        {label}
-        {required && (
-          <>
-            <span aria-hidden="true" className="text-destructive">*</span>
-            <span className="sr-only"> required</span>
-          </>
-        )}
-      </FieldLabel>
-      {control({ describedBy: describedBy || undefined, errorId })}
-      {afterControl}
-      {description && (
-        <FieldDescription
-          id={descriptionId}
-          className="min-w-0 max-w-full break-words text-xs leading-5"
-        >
-          {description}
-        </FieldDescription>
-      )}
-      <AnimatedFieldError id={errorId} message={error} />
-    </Field>
-  );
-}
 
 export function GameModeFormFields({ form }: { form: GameModeForm }) {
   const nameRegistration = form.register("name");

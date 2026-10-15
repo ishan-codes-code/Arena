@@ -1,10 +1,17 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import type { z } from "zod";
 
 import { db } from "@/lib/db";
-import { gameModes, modeTeamConfigurations, type NewGameMode, type NewModeTeamConfiguration } from "@/lib/db/schema";
 import {
-  createModeSchema,
+  gameModes,
+  games,
+  modeTeamConfigurations,
+  type NewGameMode,
+  type NewModeTeamConfiguration,
+} from "@/lib/db/schema";
+import { GameNotFoundError } from "./operations";
+import {
+  createModeWithConfigurationsSchema,
   updateModeSchema,
   deleteModeSchema,
   getModeSchema,
@@ -33,6 +40,15 @@ export class ModeSlugConflictError extends Error {
   }
 }
 
+export class ModeMaxPlayersConstraintError extends Error {
+  constructor(
+    message = "Maximum players per match cannot be less than an existing team configuration's team size.",
+  ) {
+    super(message);
+    this.name = "ModeMaxPlayersConstraintError";
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Domain errors — Team Configuration
 // ---------------------------------------------------------------------------
@@ -48,6 +64,13 @@ export class TeamConfigConflictError extends Error {
   constructor() {
     super("A configuration with this team size already exists for this mode.");
     this.name = "TeamConfigConflictError";
+  }
+}
+
+export class TeamConfigMaxPlayersError extends Error {
+  constructor() {
+    super("The team size exceeds the maximum players per match for this mode.");
+    this.name = "TeamConfigMaxPlayersError";
   }
 }
 
@@ -79,6 +102,22 @@ function isTeamSizeConflict(error: unknown): boolean {
   return isUniqueViolation(error, "mode_team_configurations_mode_id_team_size_unique");
 }
 
+function isGameForeignKeyViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return false;
+  }
+  if (error.code !== "23503") {
+    return false;
+  }
+  const constraint =
+    "constraint_name" in error
+      ? error.constraint_name
+      : "constraint" in error
+        ? error.constraint
+        : undefined;
+  return constraint === "game_modes_game_id_games_id_fk";
+}
+
 // ---------------------------------------------------------------------------
 // Mode operations
 // ---------------------------------------------------------------------------
@@ -107,13 +146,60 @@ export async function getMode(input: z.infer<typeof getModeSchema>) {
   return mode;
 }
 
-export async function createMode(input: z.infer<typeof createModeSchema>) {
+export async function createModeWithConfigurations(
+  input: z.infer<typeof createModeWithConfigurationsSchema>,
+) {
+  const { team_configurations: configurationsInput, ...modeInput } = input;
+  const teamSizes = new Set<number>();
+  for (const configuration of configurationsInput) {
+    if (teamSizes.has(configuration.team_size)) {
+      throw new TeamConfigConflictError();
+    }
+    teamSizes.add(configuration.team_size);
+  }
+
   try {
-    const [mode] = await db.insert(gameModes).values(input).returning();
-    return mode;
+    return await db.transaction(async (tx) => {
+      const [game] = await tx
+        .select({ id: games.id })
+        .from(games)
+        .where(eq(games.id, modeInput.game_id))
+        .limit(1);
+
+      if (!game) {
+        throw new GameNotFoundError();
+      }
+
+      const [mode] = await tx
+        .insert(gameModes)
+        .values(modeInput)
+        .returning();
+
+      if (!mode) {
+        throw new Error("The game mode insert returned no row.");
+      }
+
+      const configurations = await tx
+        .insert(modeTeamConfigurations)
+        .values(
+          configurationsInput.map((configuration) => ({
+            ...configuration,
+            mode_id: mode.id,
+          })),
+        )
+        .returning();
+
+      return { mode, configurations };
+    });
   } catch (error) {
     if (isModeSlugConflict(error)) {
       throw new ModeSlugConflictError();
+    }
+    if (isTeamSizeConflict(error)) {
+      throw new TeamConfigConflictError();
+    }
+    if (isGameForeignKeyViolation(error)) {
+      throw new GameNotFoundError();
     }
     throw error;
   }
@@ -132,6 +218,32 @@ export async function updateMode(input: z.infer<typeof updateModeSchema>) {
 
       if (!current) {
         throw new ModeNotFoundError();
+      }
+
+      if (
+        fields.max_players_per_match !== undefined &&
+        fields.max_players_per_match !== current.max_players_per_match
+      ) {
+        const [conflictingConfig] = await tx
+          .select({
+            id: modeTeamConfigurations.id,
+            team_size: modeTeamConfigurations.team_size,
+          })
+          .from(modeTeamConfigurations)
+          .where(
+            and(
+              eq(modeTeamConfigurations.mode_id, id),
+              gt(modeTeamConfigurations.team_size, fields.max_players_per_match),
+            ),
+          )
+          .for("update")
+          .limit(1);
+
+        if (conflictingConfig) {
+          throw new ModeMaxPlayersConstraintError(
+            `Maximum players per match (${fields.max_players_per_match}) cannot be less than existing team configuration size (${conflictingConfig.team_size}).`,
+          );
+        }
       }
 
       const updateValues: Partial<NewGameMode> = {
@@ -173,42 +285,17 @@ export async function updateMode(input: z.infer<typeof updateModeSchema>) {
   }
 }
 
-/**
- * Deactivates a mode rather than hard-deleting it.
- *
- * Modes will eventually be referenced by tournament records. A hard delete
- * would break those references (even with ON DELETE CASCADE the historical
- * data would be lost). Setting active=false keeps the row and its
- * relationships intact while hiding it from normal Console lists.
- *
- * If the mode is already inactive this is a no-op (returns the current row).
- */
-export async function deactivateMode(input: z.infer<typeof deleteModeSchema>) {
-  const [mode] = await db
-    .select({ id: gameModes.id, active: gameModes.active })
-    .from(gameModes)
-    .where(eq(gameModes.id, input.id))
-    .limit(1);
-
-  if (!mode) {
-    throw new ModeNotFoundError();
-  }
-
-  if (!mode.active) {
-    return { id: mode.id };
-  }
-
-  const [updated] = await db
-    .update(gameModes)
-    .set({ active: false, updated_at: new Date() })
+export async function deleteMode(input: z.infer<typeof deleteModeSchema>) {
+  const [deleted] = await db
+    .delete(gameModes)
     .where(eq(gameModes.id, input.id))
     .returning({ id: gameModes.id });
 
-  if (!updated) {
+  if (!deleted) {
     throw new ModeNotFoundError();
   }
 
-  return updated;
+  return deleted;
 }
 
 // ---------------------------------------------------------------------------
@@ -227,11 +314,32 @@ export async function listTeamConfigs(input: z.infer<typeof listTeamConfigsSchem
 
 export async function createTeamConfig(input: z.infer<typeof createTeamConfigSchema>) {
   try {
-    const [config] = await db
-      .insert(modeTeamConfigurations)
-      .values(input)
-      .returning();
-    return config;
+    return await db.transaction(async (tx) => {
+      const [mode] = await tx
+        .select({ max_players_per_match: gameModes.max_players_per_match })
+        .from(gameModes)
+        .where(eq(gameModes.id, input.mode_id))
+        .for("update");
+
+      if (!mode) {
+        throw new ModeNotFoundError();
+      }
+
+      if (input.team_size > mode.max_players_per_match) {
+        throw new TeamConfigMaxPlayersError();
+      }
+
+      const [config] = await tx
+        .insert(modeTeamConfigurations)
+        .values(input)
+        .returning();
+
+      if (!config) {
+        throw new Error("The team configuration insert returned no row.");
+      }
+
+      return config;
+    });
   } catch (error) {
     if (isTeamSizeConflict(error)) {
       throw new TeamConfigConflictError();
@@ -253,6 +361,22 @@ export async function updateTeamConfig(input: z.infer<typeof updateTeamConfigSch
 
       if (!current) {
         throw new TeamConfigNotFoundError();
+      }
+
+      if (fields.team_size !== undefined) {
+        const [mode] = await tx
+          .select({ max_players_per_match: gameModes.max_players_per_match })
+          .from(gameModes)
+          .where(eq(gameModes.id, current.mode_id))
+          .for("update");
+
+        if (!mode) {
+          throw new ModeNotFoundError();
+        }
+
+        if (fields.team_size > mode.max_players_per_match) {
+          throw new TeamConfigMaxPlayersError();
+        }
       }
 
       const updateValues: Partial<NewModeTeamConfiguration> = {
